@@ -1,0 +1,5 @@
+{
+    "gec_model_path": "/home/tech/Documents/Models/GEC_Models/DynamicV10_SWA15_Optim",
+    "gibberish_model_path": "/home/tech/Documents/Models/GibbOnnx",
+    "logLevel": 4
+}
