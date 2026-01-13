@@ -1,0 +1,5 @@
+{
+    "gec_model_path": "/home/tech/Documents/gitDir/GEC/gec-demo/models/GecModel",
+    "gibberish_model_path": "/home/tech/Documents/gitDir/GEC/gec-demo/models/GibbModel",
+    "logLevel": 4
+}
