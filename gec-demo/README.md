@@ -4,6 +4,7 @@
 
 # To Do
 - Fix any `TODO:` comments
+- NOTE: We don't add the ONNX model files to the repo
 - Make docker portion
 - Test website
   - **Make website editable after checking**
