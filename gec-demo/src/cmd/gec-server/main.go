@@ -1,6 +1,6 @@
 // src/cmd/gec-server/main.go
 // Starts HTTP server on :8089, serves /api/gec + static files 
-package gecserver
+package main
 
 import (
 	"os"
