@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GEC Demo — Marked Story</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+    </style>
+</head>
+
+<body>
+    <div class="frame">
+        <!-- Example dropdown like your earlier requirement -->
+        <div class="topTools">
+            <select id="exampleSelect" title="Load an example">
+                <option value="">Choose an example…</option>
+                <option value="ex1">Example #1</option>
+                <option value="ex2">Example #2</option>
+                <option value="ex3">Example #3</option>
+                <option value="sva">Subject-Verb Agreement</option>
+                <option value="punc">Punctuation</option>
+                <option value="caps">Capitalization</option>
+            </select>
+        </div>
+
+        <!-- IMPORTANT:
+            We keep TWO layers:
+            1) editorEl (contenteditable) for typing
+            2) renderEl (div) to show markup from offsets (safe + deterministic)
+        -->
+        <div id="editorEl" class="writer" contenteditable="true" spellcheck="false"></div>
+        <div id="renderEl" class="writer" style="display:none;"></div>
+
+
+        <!-- Writing / rendered content area -->
+        <!-- <div id="writer" class="writer" contenteditable="true" spellcheck="false"></div> -->
+
+        <!-- Bottom bar (word count + spelling + grammar + check button) -->
+        <div class="bottomBar">
+            <div class="stats">
+                <div class="stat">
+                    <div class="label">Word Count</div>
+                    <div class="value" id="wordCount">0</div>
+                </div>
+
+                <div class="stat">
+                    <div class="label">Spelling Errors</div>
+                    <div class="value underline-red" id="spellCount">0</div>
+                </div>
+
+                <div class="stat">
+                    <div class="label">Grammar Errors</div>
+                    <div class="value underline-red" id="grammarCount">0</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <!-- icon buttons (purely visual like screenshot) -->
+                <button class="iconBtn" id="btnReset" title="Reset / Clear">
+                    <!-- refresh icon -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="rgba(17,24,39,0.75)" stroke-width="2"
+                            stroke-linecap="round" />
+                        <path d="M20 4v6h-6" stroke="rgba(17,24,39,0.75)" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </button>
+
+                <button class="iconBtn" id="btnCopy" title="Copy text">
+                    <!-- copy icon -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="9" y="9" width="10" height="10" rx="2" stroke="rgba(17,24,39,0.75)" stroke-width="2" />
+                        <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke="rgba(17,24,39,0.75)"
+                            stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+
+                <button class="primaryBtn" id="btnCheck" title="Send text to model endpoint">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
