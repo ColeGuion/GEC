@@ -286,7 +286,7 @@ func addToDiffs(diffs *[]Markup, index, length int, replacement, diffType string
 		Index:   index,
 		Length:  length,
 		Message: replacement,
-		Type:    strings.ToUpper(diffType + "_Suggestion"),
+		Category:    strings.ToUpper(diffType + "_Suggestion"),
 	}
 
 	diffStart := index

@@ -15,6 +15,6 @@ func ViewGibbs(gibb_scores []GibbResults) {
 func ViewMisspells(misspells []Misspell) {
 	print.Debug("Misspells:")
 	for _, miss := range misspells {
-		print.Debug("{%v, %v, %v, %q},", miss.Index, miss.Length, miss.Type, miss.Suggestions)
+		print.Debug("{%v, %v, %v, %q},", miss.Index, miss.Length, miss.Category, miss.Suggestions)
 	}
 }

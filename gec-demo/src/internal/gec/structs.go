@@ -18,16 +18,16 @@ type GecResponse struct {
 
 // ********* GEC *********
 type Markup struct {
-	Index   int    `json:"index"`
-	Length  int    `json:"length"`
-	Message string `json:"message"`
-	Type    string `json:"type"`
+	Index    int    `json:"index"`
+	Length   int    `json:"length"`
+	Message  string `json:"message"`
+	Category string `json:"category"`
 }
 
 type Misspell struct {
 	Index       int      // The index of the misspelled word in the text
 	Length      int      // The length of the misspelled word
-	Type        string   // The type of error
+	Category    string   // The type of error
 	Suggestions []string // Suggested word replacements
 }
 

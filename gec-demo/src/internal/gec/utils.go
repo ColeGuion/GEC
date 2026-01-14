@@ -64,7 +64,7 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 
 		// Skip markups which index beyond the size of the original text
 		if (diff.Length + diff.Index) > text_length {
-			print.Warning("Markup '%v' indexes beyond the original text. Text Size: %v. Diff Markup: %+v", diff.Type, text_length, diff)
+			print.Warning("Markup '%v' indexes beyond the original text. Text Size: %v. Diff Markup: %+v", diff.Category, text_length, diff)
 			continue
 		}
 
@@ -90,27 +90,25 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 
 		// Skip markups which index beyond the size of the original text
 		if (miss.Length + miss.Index) > text_length {
-			print.Warning("Markup '%v' indexes beyond the original text. Text Size: %v. Misspelling Markup: %+v", miss.Type, text_length, miss)
+			print.Warning("Markup '%v' indexes beyond the original text. Text Size: %v. Misspelling Markup: %+v", miss.Category, text_length, miss)
 			continue
 		}
 
-		if miss.Type == "typo" {
-			//if miss.Type == "SPELLING_MISTAKE" {
+		if miss.Category == "SPELLING_MISTAKE" {
 			typo := Markup{
-				Index:   miss.Index,
-				Length:  miss.Length,
-				Message: "Possible spelling mistake found.",
-				Type:    miss.Type,
+				Index:    miss.Index,
+				Length:   miss.Length,
+				Message:  "Possible spelling mistake found.",
+				Category: miss.Category,
 			}
 			markups = append(markups, typo)
 		}
-		if miss.Type == "dirty" {
-			//if miss.Type == "PROFANITY" {
+		if miss.Category == "PROFANITY" {
 			dirtyMark := Markup{
-				Index:   miss.Index,
-				Length:  miss.Length,
-				Message: "This word is considered offensive",
-				Type:    miss.Type,
+				Index:    miss.Index,
+				Length:   miss.Length,
+				Message:  "This word is considered offensive",
+				Category: miss.Category,
 			}
 			markups = append(markups, dirtyMark)
 
@@ -147,10 +145,10 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 		} */
 
 		gibb_markup := Markup{
-			Index:   gibb.Index,
-			Length:  gibb.Length,
-			Message: "Text is unclear.",
-			Type:    mark_type,
+			Index:    gibb.Index,
+			Length:   gibb.Length,
+			Message:  "Text is unclear.",
+			Category: mark_type,
 		}
 		markups = append(markups, gibb_markup)
 	}
