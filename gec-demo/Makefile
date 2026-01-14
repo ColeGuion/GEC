@@ -22,7 +22,7 @@ NATIVE_DIR    := src/native/gec_runtime
 NATIVE_LIB    := $(NATIVE_DIR)/build/libgec.a
 
 GO_CMD_DIR    := src/cmd/gec-server
-GO_BIN_DIR    := build
+GO_BIN_DIR    := build/bin
 GO_BIN        := $(GO_BIN_DIR)/$(APP_NAME)
 
 # Go environment
@@ -34,6 +34,7 @@ CGO_ENABLED   := 1
 export CGO_ENABLED := 1
 export CGO_CFLAGS  := -I$(NATIVE_DIR)/include
 export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -lstdc++
+export GEC_ROOT := $(CURDIR)
 
 # ---------- Targets ----------
 .PHONY: all native server run clean info
@@ -47,11 +48,14 @@ native:
 	$(MAKE) -C $(NATIVE_DIR)
 
 # ---------- Go Server ----------
-server: $(NATIVE_LIB)
+$(GO_BIN): $(NATIVE_LIB)
 	@echo "🔨 Building Go server"
 	@mkdir -p $(GO_BIN_DIR)
-	cd $(GO_CMD_DIR) && \
-		CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -o ../../$(GO_BIN)
+	CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -o $(GO_BIN) ./$(GO_CMD_DIR)
+	@chmod +x $(GO_BIN)
+	@file $(GO_BIN) | grep -q "executable" || (echo "ERROR: $(GO_BIN) is not an executable" && file $(GO_BIN) && exit 1)
+
+server: $(GO_BIN)
 
 # ---------- Run ----------
 run: server
