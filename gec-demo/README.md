@@ -1,10 +1,70 @@
+[GitHub Repo](https://github.com/ColeGuion/GEC)  
+[Webpage](http://172.21.188.179:5500/gec-demo/webpage/src/)  
+
+
 # To Do
-- Update `CONFIG_PATH` in `inference.c`
 - Fix any `TODO:` comments
 - Make docker portion
 - Test website
+  - **Make website editable after checking**
+- Set Markups Category: `GRAMMAR_SUGGESTION`, `SPELLING_MISTAKE`, `PROFANITY`
+- Handle `"github.com/sthorne/go-hunspell"` outside of linux machines
+- Update `CONFIG_PATH` in `inference.c`
+  - Fix other paths to become local to workspace
+  - `spellChecker.go`: Uses an environment variable `GEC_ROOT` for the repo root
+    - Set GEC_ROOT once (dev, prod, Docker, CI)
+```dockerfile
+ENV GEC_ROOT=/app
+```
 
 
+# API Contract
+POST /api/gec
+body: { "text": "" }
+
+Response Output:
+```json
+{
+  "corrected_text": "We should buy a car.",
+  "character_count": 20,
+  "error_character_count": 9,
+  "contains_profanity": false,
+  "service_time": 2.94,
+  "text_markups": [
+    {
+      "index": 0,
+      "length": 2,
+      "message": "Change the capitalization “We”",
+      "category": "GRAMMAR_SUGGESTION"
+    },
+    {
+      "index": 3,
+      "length": 5,
+      "message": "Possible spelling mistake found.",
+      "category": "Spelling Mistake"
+    },
+    {
+      "index": 13,
+      "length": 2,
+      "message": "Did you mean “a”?",
+      "category": "GRAMMAR_SUGGESTION"
+    }
+  ],
+  "gibberish_scores": [
+    {
+      "index": 0,
+      "length": 20,
+      "score": {
+        "clean": 68.77234,
+        "mild": 24.709293,
+        "noise": 5.989139,
+        "wordSalad": 0.5292266
+      }
+    },
+  ]
+
+}
+```
 
 
 # Repo Layout

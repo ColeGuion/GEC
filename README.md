@@ -67,9 +67,10 @@ Response Output:
 ```json
 {
   "corrected_text": "We should buy a car.",
-  "contains_profanity": false,
   "character_count": 20,
   "error_character_count": 9,
+  "contains_profanity": false,
+  "service_time": 2.94,
   "text_markups": [
     {
       "index": 0,

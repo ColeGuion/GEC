@@ -25,62 +25,17 @@ bool USE_GPU = false;
 bool ALLOC_REGISTERED = false;  // If allocator has been registered
 bool ALLOC_CUDA_REGISTERED = false;
 bool USING_F16_MODEL = true;   // true if using model with _Float16 values
-const char* CONFIG_PATH = "/home/tech/Documents/gitDir/GEC/gec-demo/src/native/gec_runtime/config.json";
+const char* CONFIG_PATH = "/home/tech/Documents/gitDir/GEC/gec-demo/src/native/gec_runtime/config/config.json";
 
-
-// Print CUDA Provider Options
-void getProviderOpts(Geco* geco) {
-    char* cuda_options_str = NULL;
-    ORT_CLEAN_ON_ERROR(leave_func, geco, geco->g_ort->GetCUDAProviderOptionsAsString(geco->cuda_options, geco->allocator, &cuda_options_str));
-    Log(DEBUG, "CUDA Provider Options: \"%s\"", cuda_options_str);
-
-    if (cuda_options_str) {
-        ORT_CLEAN_ON_ERROR(leave_func, geco, geco->g_ort->AllocatorFree(geco->allocator, cuda_options_str));
-        cuda_options_str = NULL;
-    }
-
-    leave_func:
-    return;
-}
-
-// Get RES memory usage of the running process
-int getMem() {
-    int mem_kb = 0;
-    FILE* file = fopen("/proc/self/status", "r");
-    if (!file) {
-        Log(WARNING, "failed opening /proc/self/status");
-        return 0;
-    }
-
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-        if (strncmp(line, "VmRSS:", 6) == 0) {
-            sscanf(line, "VmRSS: %d kB", &mem_kb);
-            //Log(DEBUG, "(%s) Memory Usage: %d kb", loc, mem_kb);
-            break;
-        }
-    }
-    fclose(file);
-    return mem_kb;
-}
 
 int load_config() {
     clock_t startTime = clock();
-
-    //TODO: Is this even needed? file is never used
-    // Open the JSON file
-    FILE *file = fopen(CONFIG_PATH, "r");
-    if (!file) {
-        perror("Unable to open configuration file");
-        return -1;
-    }
 
     // Read and parse the JSON file
     struct json_object *parsed_json;
     parsed_json = json_object_from_file(CONFIG_PATH);
     if (!parsed_json) {
         Log(ERROR, "Error parsing JSON file");
-        fclose(file);
         return -1;
     }
 
@@ -107,7 +62,6 @@ int load_config() {
 
     // Close the file and free memory
     json_object_put(parsed_json);
-    fclose(file);
     SetTimerValue("Load Config", startTime, clock());
     return 0;
 }
@@ -219,8 +173,6 @@ void* NewGeco(int useGpu, int gpuId) {
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->decPast_session, &geco->decPast_io_binding));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->gibb_session, &geco->gibb_io_binding));
 
-
-    //getProviderOpts(geco);  // Get options after
 
     // Load the SentencePiece model
     geco->processor = initialize_processor(PATH_SP_MODEL);

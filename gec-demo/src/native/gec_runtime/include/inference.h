@@ -86,8 +86,7 @@ typedef struct {
     } while (0);
 
 
-// Get RES memory usage of the running process in KB
-int getMem();
+
 
 /**
  * @brief Loads the configuration from a JSON file
