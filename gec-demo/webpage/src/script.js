@@ -16,22 +16,19 @@ const EXAMPLES = {
     // Commas
 };
 
+
 document.addEventListener("DOMContentLoaded", function () {
     const editorEl = document.getElementById("editorEl");
-    const renderEl = document.getElementById("renderEl");
     const wordCountEl = document.getElementById("wordCount");
     const spellCountEl = document.getElementById("spellCount");
     const grammarCountEl = document.getElementById("grammarCount");
-
     const btnCheck = document.getElementById("btnCheck");
     const btnReset = document.getElementById("btnReset");
     const btnCopy = document.getElementById("btnCopy");
-
     const exampleSelectEl = document.getElementById("exampleSelect");
-    //DummyFill();
-
     // Keep last raw plain text (so offsets always refer to the correct text)
     let lastPlainText = "";
+    //DummyFill();
 
 
     // ---------- Helpers ----------
@@ -48,16 +45,6 @@ document.addEventListener("DOMContentLoaded", function () {
         grammarCountEl.textContent = String(grammar);
     }
 
-    function showEditor() {
-        renderEl.style.display = "none";
-        editorEl.style.display = "block";
-    }
-
-    function showRender() {
-        editorEl.style.display = "none";
-        renderEl.style.display = "block";
-    }
-
     function setEditorPlainText(text) {
         // Reset contenteditable to plain text with paragraphs
         editorEl.innerHTML = "";
@@ -69,7 +56,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         lastPlainText = getPlainTextFromEditor();
         updateStats({ plainText: lastPlainText, textMarkup: [] });
-        showEditor();
     }
 
     // ---------- Main action ----------
@@ -78,7 +64,6 @@ document.addEventListener("DOMContentLoaded", function () {
         lastPlainText = text;
 
         if (!text.trim()) {
-            // nothing to do
             updateStats({ plainText: text, textMarkup: [] });
             return;
         }
@@ -92,7 +77,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text })
             });
-
             if (!resp.ok) {
                 const errText = await resp.text().catch(() => "");
                 throw new Error(`HTTP ${resp.status} ${resp.statusText}${errText ? " — " + errText : ""}`);
@@ -109,26 +93,18 @@ document.addEventListener("DOMContentLoaded", function () {
             //   service_time: float,
             // }
             const data = await resp.json();
-            console.log(`Response Object:`, data);
+            logDataDetails(data);
 
             const corrected = data?.corrected_text ?? "";
             const markups = Array.isArray(data?.text_markups) ? data.text_markups : [];
-            const charCount = data?.character_count ?? -1;
-            const errCharCount = data?.error_character_count ?? -1;
-            const hasProfanity = data?.contains_profanity ?? false;
-            const serviceTime = data?.service_time ?? 0.0;
-            console.log(`Corrected: ${JSON.stringify(corrected)}
-Markups: ${markups.length}
-Service Time: ${serviceTime}
-Character Count: ${charCount}
-Error Characters: ${errCharCount}
-Has Profanity?: ${hasProfanity}`);
-            console.log("Markups:", markups);
+
+            // Apply highlights DIRECTLY into the editable area
+            applyHighlightsToEditor(markups, text);
 
             // Render highlights based on OFFSETS into the ORIGINAL text that we sent.
-            let markedHtml = buildMarkedHtmlFromOffsets(text, markups);
-            console.log(`Marked HTML: ${markedHtml}`);
-            renderEl.innerHTML = markedHtml;
+            //let markedHtml = buildMarkedHtmlFromOffsets(text, markups);
+            //console.log(`Marked HTML: ${markedHtml}`);
+            //renderEl.innerHTML = markedHtml;
 
             // Update counts from the returned markups + current text
             updateStats({ plainText: text, textMarkup: markups });
@@ -136,13 +112,14 @@ Has Profanity?: ${hasProfanity}`);
             // (Optional) If you want a "copy corrected" behavior later:
             // btnCopy.dataset.corrected = corrected;
 
-            showRender();
+            //showRender();
         } catch (err) {
             console.error(err);
             // If the call fails, stay in editor view but still update word count
-            updateStats({ plainText: text, textMarkup: [] });
+            //updateStats({ plainText: text, textMarkup: [] });
             alert(`Check failed: ${err?.message ?? String(err)}`);
-            showEditor();
+            clearHighlights();           // important: clean up on error
+            //showEditor();
         } finally {
             btnCheck.disabled = false;
             btnCheck.textContent = "Check";
@@ -151,8 +128,10 @@ Has Profanity?: ${hasProfanity}`);
 
     // ---------- Events ----------
     editorEl.addEventListener("input", () => {
-        // When user edits after a run, go back to editor mode and reset error counts
-        showEditor();
+        // Whenever user types → remove all highlights (simplest UX)
+        clearHighlights();
+
+        // Update stats to zero
         updateStats({ plainText: getPlainTextFromEditor(), textMarkup: [] });
     });
 
@@ -177,9 +156,56 @@ Has Profanity?: ${hasProfanity}`);
     });
 
     // ---------- Init ----------
-    //setEditorPlainText(`Just over two months later, an attempt on his life would be made and failed. He quickly recovered and returned to duty.\n\nIn conclusion, Brutus strongly though that caeser was a bad leader.`);
     setEditorPlainText("we shood buy an car.");
 });
+
+function applyHighlightsToEditor(markups, originalText) {
+    if (!markups.length) {
+        clearHighlights();
+        return;
+    }
+
+    // Sort and normalize (you already have normalizeMarkups)
+    const marks = normalizeMarkups(markups, originalText.length);
+
+    // We'll rebuild the content with <span> wrappers
+    let html = "";
+    let cursor = 0;
+
+    for (const m of marks) {
+        if (cursor < m.index) {
+            html += escapeHtml(originalText.slice(cursor, m.index));
+        }
+
+        const seg = originalText.slice(m.index, m.end);
+        const cls = isSpellingCategory(m.category) ? "spell" : "hl";
+        const tooltip = safeTooltip(m.message || m.category || "Suggestion");
+
+        html += `<span class="${cls}" data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(seg || " ")}</span>`;
+
+        cursor = m.end;
+    }
+
+    if (cursor < originalText.length) {
+        html += escapeHtml(originalText.slice(cursor));
+    }
+
+    // Preserve line breaks
+    html = html.replaceAll("\n", "<br>");
+
+    // Important: put it back into the editor
+    editorEl.innerHTML = html;
+
+    // Optional: scroll to top or to first error
+    // editorEl.scrollTop = 0;
+}
+
+function clearHighlights() {
+    // Flatten back to plain text (removes all <span> wrappers)
+    const plain = getPlainTextFromEditor();
+    setEditorPlainText(plain);   // your existing function that rebuilds <p> tags
+}
+
 
 // ---------- Helpers ----------
 function buildMarkedHtmlFromOffsets(originalText, textMarkup) {
@@ -260,6 +286,25 @@ function escapeHtml(str) {
 function safeTooltip(msg) {
     const s = String(msg ?? "").trim();
     return s.length > 400 ? (s.slice(0, 397) + "...") : s;
+}
+
+
+function logDataDetails(data) {
+    console.log(`Response Object:`, data);
+
+    const corrected = data?.corrected_text ?? "";
+    const markups = Array.isArray(data?.text_markups) ? data.text_markups : [];
+    const charCount = data?.character_count ?? -1;
+    const errCharCount = data?.error_character_count ?? -1;
+    const hasProfanity = data?.contains_profanity ?? false;
+    const serviceTime = data?.service_time ?? 0.0;
+    console.log(`Corrected: ${JSON.stringify(corrected)}
+Markups: ${markups.length}
+Service Time: ${serviceTime}
+Character Count: ${charCount}
+Error Characters: ${errCharCount}
+Has Profanity?: ${hasProfanity}`);
+    console.log("Markups:", markups);
 }
 
 function DummyFill() {

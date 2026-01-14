@@ -7,6 +7,7 @@
     <title>GEC Demo — Marked Story</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        
     </style>
 </head>
 
@@ -29,17 +30,7 @@
             </select>
         </div>
 
-        <!-- IMPORTANT:
-            We keep TWO layers:
-            1) editorEl (contenteditable) for typing
-            2) renderEl (div) to show markup from offsets (safe + deterministic)
-        -->
         <div id="editorEl" class="writer" contenteditable="true" spellcheck="false"></div>
-        <div id="renderEl" class="writer" style="display:none;"></div>
-
-
-        <!-- Writing / rendered content area -->
-        <!-- <div id="writer" class="writer" contenteditable="true" spellcheck="false"></div> -->
 
         <!-- Bottom bar (word count + spelling + grammar + check button) -->
         <div class="bottomBar">
