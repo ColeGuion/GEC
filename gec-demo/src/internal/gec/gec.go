@@ -110,12 +110,12 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 	if DoMisspellings {
 		print.Warning("Spell checker is not yet implemented.")
 		// Find the spelling errors
-		//misspells, err = DirtySpellChecker(text)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//misspells = SpellChecker(misspells, text)
-		//ViewMisspells(misspells)
+		misspells, err = DirtySpellChecker(text)
+		if err != nil {
+			return nil, err
+		}
+		misspells = SpellChecker(misspells, text)
+		ViewMisspells(misspells)
 	}
 
 	// Run the model to get the grammatically corrected version of the text
