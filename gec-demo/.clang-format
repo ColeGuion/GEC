@@ -1,0 +1,86 @@
+# .clang-format
+# Style goals for this repo:
+# - Clean, readable C/C++ suitable for mixed C + C++ runtime code
+# - Stable diffs (avoid excessive reflow)
+# - Good defaults for systems-style code (wrappers, tokenizers, ONNX glue)
+
+BasedOnStyle: LLVM
+
+# ---- Indentation / Wrapping ----
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+ColumnLimit: 100
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortBlocksOnASingleLine: Never
+
+# Keep parameters readable, but don't explode formatting too aggressively.
+BinPackParameters: false
+BinPackArguments: false
+
+# Prefer breaking after operators for readability.
+BreakBeforeBinaryOperators: None
+
+# ---- Spacing ----
+SpaceBeforeParens: ControlStatements  # if (...) while (...) for (...), but foo(...)
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+
+SpaceBeforeAssignmentOperators: true
+SpaceAfterCStyleCast: false
+
+# Pointer/reference style: int* p (common C style)
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# ---- Includes ----
+SortIncludes: true
+IncludeBlocks: Regroup
+# If you want more control later, we can add IncludeCategories.
+
+# ---- Comments ----
+ReflowComments: true
+CommentPragmas: '^ IWYU pragma:'
+
+# ---- Switch / Case ----
+IndentCaseLabels: true
+
+# ---- Function declarations ----
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: Yes
+
+# ---- Preprocessor ----
+IndentPPDirectives: None
+
+# ---- Constructors / initializers ----
+Cpp11BracedListStyle: true
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerIndentWidth: 4
+
+# ---- Misc ----
+FixNamespaceComments: true
+NamespaceIndentation: None
+MaxEmptyLinesToKeep: 2  # Keep one-liners from becoming messy.
+
+# Avoid surprising formatting changes in macros / special blocks.
+ForEachMacros:
+  - FOREACH
+  - FOR_EACH
+  - foreach
+
+StatementMacros:
+  - Q_UNUSED
+  - UNUSED
+  - ASSERT
+  - EXPECT
+  - REQUIRE
+
+# If your codebase uses "extern "C"" blocks for CGO headers, this tends to keep it sane.
+Language: Cpp

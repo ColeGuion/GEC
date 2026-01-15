@@ -2,10 +2,8 @@
 
 // (0)Critical, (1)Error, (2)Warning, (3)Info, (4)Debug
 LogLev LOG_LEVEL = DEBUG;
-void Log(LogLev lg, const char* format, ...)
-{
-    if (LOG_LEVEL >= lg)
-    {
+void Log(LogLev lg, const char* format, ...) {
+    if (LOG_LEVEL >= lg) {
         va_list args; // List to hold the variable arguments
 
         if (lg <= ERROR)

@@ -1,12 +1,6 @@
 #include "inference.h"
 #include "sentencepiece_wrapper.h"
 
-// Compile options for reference
-// gcc -shared -o libinference.so inference.c sentencepiece_wrapper.cpp wp_tokenizer.cpp  -I/usr/src/ci/onnxruntime/onnxruntime-linux-x64-gpu-1.20.0/include -I. -g -Wall -Wextra -fPIC -Wl,-soname,libinference.so
-// mv libinference.so /usr/src/packages/libinference/debian/usr/lib/x86_64-linux-gnu/libinference.so
-// strip --strip-unneeded /usr/src/packages/libinference/debian/usr/lib/x86_64-linux-gnu/libinference.so
-// chmod 644 /usr/src/packages/libinference/debian/usr/lib/x86_64-linux-gnu/libinference.so
-
 // Path Variables
 static char PATH_ENCODER[1000];
 static char PATH_DECODER[1000];

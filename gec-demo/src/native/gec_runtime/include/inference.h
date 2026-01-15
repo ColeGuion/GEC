@@ -32,8 +32,7 @@ extern char* decPast_output_names[25];
 #define LOGIT_SIZE 32128
 
 // G.E.C.O. => Grammar Error Corrector Onnx
-typedef struct
-{
+typedef struct {
     OrtValue* input_tensor;
     OrtValue* output_tensor;
     OrtValue* output_tensor_fp16;
@@ -75,11 +74,9 @@ typedef struct
 
 // Goto the cleanup label if an error occurs
 #define ORT_CLEAN_ON_ERROR(cleanup_label, geco, expr)                                              \
-    do                                                                                             \
-    {                                                                                              \
+    do {                                                                                           \
         OrtStatus* onnx_status = (expr);                                                           \
-        if (onnx_status != NULL)                                                                   \
-        {                                                                                          \
+        if (onnx_status != NULL) {                                                                 \
             const char* msg = geco->g_ort->GetErrorMessage(onnx_status);                           \
             fprintf(stderr, "[%d] %s() - ERROR: %s\n", __LINE__, __func__, msg);                   \
             geco->g_ort->ReleaseStatus(onnx_status);                                               \

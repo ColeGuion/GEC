@@ -20,8 +20,7 @@ std::string wstring_to_utf8(const std::wstring& wstr);
 std::wstring utf8_to_wstring(const std::string& str);
 
 // Class definition for WordPieceTokenizer
-class WordPieceTokenizer
-{
+class WordPieceTokenizer {
   private:
     json jsonObj;
     json vocab;
