@@ -9,7 +9,7 @@ import (
 
 var (
 	none = regexp.MustCompile(`^(?:0|\*[\w?]\*|\*\-\d{1,3}|\*[A-Z]+\*\-\d{1,3}|\*)$`)
-	keep = regexp.MustCompile(`^\-[A-Z]{3}\-$`)	// Three uppercase letters enclosed in `-` and `-`
+	keep = regexp.MustCompile(`^\-[A-Z]{3}\-$`) // Three uppercase letters enclosed in `-` and `-`
 )
 
 func (pt *perceptronTagger) tag(tokens []*Token) []*Token {

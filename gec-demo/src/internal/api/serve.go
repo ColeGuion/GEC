@@ -1,5 +1,5 @@
 // src/internal/api/server.go
-// routes + handlers (POST /api/gec, /healthCheck) 
+// routes + handlers (POST /api/gec, /healthCheck)
 package api
 
 import (
@@ -73,13 +73,6 @@ func gecHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* // Create response
-	correctedText, markups := runGec(req.Text)
-	response := GecResponse{
-		CorrectedText: correctedText,
-		TextMarkup:    markups,
-	} */
-
 	// Set response headers
 	w.Header().Set("Content-Type", "application/json")
 
@@ -97,7 +90,7 @@ func StartServer(port string) {
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
 	}
-	
+
 	// Routes
 	http.HandleFunc("/api/gec", enableCORS(gecHandler))
 	http.HandleFunc("/healthCheck", enableCORS(healthCheck))

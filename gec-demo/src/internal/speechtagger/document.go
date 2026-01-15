@@ -38,20 +38,6 @@ func InitTaggingModel() error {
 	var tags map[string]string
 	var err error
 
-	/* // Set paths relative to the current Go file location
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return fmt.Errorf("failed to get current file path")
-	}
-
-	currentDir := filepath.Dir(filename)
-	GobDataDir := filepath.Join(currentDir, "GobData")
-
-	// Set the global variables
-	TagsGob = filepath.Join(GobDataDir, "tags.gob")
-	WeightsGob = filepath.Join(GobDataDir, "weights.gob") */
-
-
 	// Resolve paths to local GEC_ROOT env variable
 	TagsGob, err = resolvePath("src", "internal", "speechtagger", "data", "tags.gob")
 	if err != nil {
@@ -61,9 +47,8 @@ func InitTaggingModel() error {
 	if err != nil {
 		return err
 	}
-	print.Info("Tags-Gob Path: \x1b[93m%q\x1b[0m", TagsGob)
-	print.Info("Weights-Gob Path: \x1b[93m%q\x1b[0m", WeightsGob)
-
+	print.Info("Tags-Gob Path: \x1b[36m%q\x1b[0m", TagsGob)
+	print.Info("Weights-Gob Path: \x1b[36m%q\x1b[0m", WeightsGob)
 
 	// Decode the gob files
 	err = decodeGob(TagsGob, &tags)
