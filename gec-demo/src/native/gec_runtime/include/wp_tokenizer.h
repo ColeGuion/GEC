@@ -1,11 +1,12 @@
 #ifndef WP_TOKENIZER_H
 #define WP_TOKENIZER_H
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include "json.hpp"
-#include <unicode/uchar.h>  // ICU library
+
+#include <iostream>
+#include <string>
+#include <unicode/uchar.h> // ICU library
+#include <vector>
 using namespace std;
 using json = nlohmann::json;
 
@@ -19,14 +20,15 @@ std::string wstring_to_utf8(const std::wstring& wstr);
 std::wstring utf8_to_wstring(const std::string& str);
 
 // Class definition for WordPieceTokenizer
-class WordPieceTokenizer {
-private:
+class WordPieceTokenizer
+{
+  private:
     json jsonObj;
     json vocab;
     size_t max_input_chars_per_word;
     std::wstring unk_token;
 
-public:
+  public:
     // Constructor
     WordPieceTokenizer(const std::string& config_path);
 

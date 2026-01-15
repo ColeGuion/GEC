@@ -2,14 +2,15 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include <stdio.h>
-#include <stdint.h>
-#include <time.h>
-#include <unistd.h>
+#include "logger.h"
+
 #include <malloc.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
-#include "logger.h"
+#include <time.h>
+#include <unistd.h>
 
 // Set the time value of a function
 void SetTimerValue(const char* name, clock_t start, clock_t end);
