@@ -16,18 +16,17 @@ char* decPast_output_names[25] = {"logits", "present.0.decoder.key", "present.0.
 char* decPast_pkv_inputs[25] = {"", "past_key_values.0.decoder.key", "past_key_values.0.decoder.value", "past_key_values.1.decoder.key", "past_key_values.1.decoder.value", "past_key_values.2.decoder.key", "past_key_values.2.decoder.value", "past_key_values.3.decoder.key", "past_key_values.3.decoder.value", "past_key_values.4.decoder.key", "past_key_values.4.decoder.value", "past_key_values.5.decoder.key", "past_key_values.5.decoder.value", "past_key_values.6.decoder.key", "past_key_values.6.decoder.value", "past_key_values.7.decoder.key", "past_key_values.7.decoder.value", "past_key_values.8.decoder.key", "past_key_values.8.decoder.value", "past_key_values.9.decoder.key", "past_key_values.9.decoder.value", "past_key_values.10.decoder.key", "past_key_values.10.decoder.value", "past_key_values.11.decoder.key", "past_key_values.11.decoder.value"};
 
 bool USE_GPU = false;
-bool ALLOC_REGISTERED = false;  // If allocator has been registered
-bool ALLOC_CUDA_REGISTERED = false;
 bool USING_F16_MODEL = true;   // true if using model with _Float16 values
-const char* CONFIG_PATH = "/home/tech/Documents/gitDir/GEC/gec-demo/src/native/gec_runtime/config/config.json";
+//const char* CONFIG_PATH = "/home/tech/Documents/gitDir/GEC/gec-demo/src/native/gec_runtime/config/config.json";
 
 
-int load_config() {
+int load_config(const char* configPath) {
     clock_t startTime = clock();
 
+    Log(INFO, "Config Path: \x1b[1;92m%s\x1b[0m", configPath);
     // Read and parse the JSON file
     struct json_object *parsed_json;
-    parsed_json = json_object_from_file(CONFIG_PATH);
+    parsed_json = json_object_from_file(configPath);
     if (!parsed_json) {
         Log(ERROR, "Error parsing JSON file");
         return -1;
@@ -61,12 +60,12 @@ int load_config() {
 }
 
 // Initialize a new GECO instance
-void* NewGeco(int useGpu, int gpuId) {
+void* NewGeco(const char* configPath, int useGpu, int gpuId) {
     clock_t startTime = clock();
     Log(DEBUG, "Initializing a new Geco object...");
 
     // Load config
-    if (load_config() != 0) {
+    if (load_config(configPath) != 0) {
         Log(ERROR, "Failed loading config!");
         return NULL;
     }
@@ -102,55 +101,39 @@ void* NewGeco(int useGpu, int gpuId) {
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateRunOptions(&geco->run_options));          // Run options
 
     // Arena Configuration
-    const char* keys[] = {"arena_extend_strategy"}; //{"max_mem", "arena_extend_strategy", "max_dead_bytes_per_chunk", "initial_chunk_size_bytes"};
-    const size_t values[] = {0};                    //{0, 0, 256, 1024};
+    const char* keys[] = {"arena_extend_strategy"}; 
+    const size_t values[] = {0};
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateArenaCfgV2(keys, values, 1, &geco->arena_cfg));
-    if (!ALLOC_REGISTERED) {
-        //ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateAndRegisterAllocator(geco->env, geco->memory_info, geco->arena_cfg));
-        ALLOC_REGISTERED = true;
-    }
 
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetIntraOpNumThreads(geco->session_options, 4));   // 1
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetInterOpNumThreads(geco->session_options, 2));
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetSessionGraphOptimizationLevel(geco->session_options, ORT_ENABLE_ALL));
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->DisableMemPattern(geco->session_options)); // Should prevent some fragmentation & Stops all logging messages "block in memory pattern size is: XXXX but the actual size is: XXXX"
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->EnableCpuMemArena(geco->session_options));
+
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_env_allocators", "1"));       // Use the environment's allocators
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.dynamic_block_base", "4"));       // Improves gpu performance
+    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_device_allocator_for_initializers", "1"));
 
     if (USE_GPU) {
         // Create CUDA Memory info
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateMemoryInfo("Cuda", OrtArenaAllocator, 0, OrtMemTypeDefault, &geco->cuda_memory_info));
+        OrtCUDAProviderOptionsV2* cuda_options = NULL;
+        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateCUDAProviderOptions(&cuda_options));
 
         char idStr[5];
         snprintf(idStr, sizeof(idStr), "%d", gpuId);
         const char* provider_keys[] = {"device_id", "arena_extend_strategy"};
         const char* provider_values[] = {idStr, "kNextPowerOfTwo"};
         
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateCUDAProviderOptions(&geco->cuda_options));
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->UpdateCUDAProviderOptions(geco->cuda_options, provider_keys, provider_values, 2));
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SessionOptionsAppendExecutionProvider_CUDA_V2(geco->session_options, geco->cuda_options));
+        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->UpdateCUDAProviderOptions(cuda_options, provider_keys, provider_values, 2));
+        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SessionOptionsAppendExecutionProvider_CUDA_V2(geco->session_options, cuda_options));
 
-        if (!ALLOC_CUDA_REGISTERED) {
-            //ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateAndRegisterAllocatorV2(geco->env, "CUDAExecutionProvider", geco->cuda_memory_info, geco->arena_cfg, provider_keys, provider_values, 2));
-            ALLOC_CUDA_REGISTERED = true;
-        }
-
-        char shrunk_devices[20];
-        snprintf(shrunk_devices, sizeof(shrunk_devices), "cpu:0;%s", geco->device_id);
-        Log(DEBUG, "Shrinking Devices: '%s'", shrunk_devices);
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddRunConfigEntry(geco->run_options, "memory.enable_memory_arena_shrinkage", shrunk_devices));
+        // Release after registering
+        geco->g_ort->ReleaseCUDAProviderOptions(cuda_options);
     } else {
         // Create Memory Info for CPU
-        //ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &geco->memory_info)); 
-        //ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateAndRegisterAllocator(geco->env, geco->memory_info, geco->arena_cfg));
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetIntraOpNumThreads(geco->session_options, 4));   // 1
-        ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetInterOpNumThreads(geco->session_options, 2));
         ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddRunConfigEntry(geco->run_options, "memory.enable_memory_arena_shrinkage", "cpu:0"));
     }
-    
-    // Session/Run Options
-    //ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddRunConfigEntry(geco->run_options, "disable_synchronize_execution_providers", "1"));  // Async copies during inference (Improves gpu performance)
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_env_allocators", "1"));       // Use the environment's allocators
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.dynamic_block_base", "4"));       // Improves gpu performance
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_device_allocator_for_initializers", "1"));
-    
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetSessionGraphOptimizationLevel(geco->session_options, ORT_ENABLE_ALL));               // Enable all graph optimizations
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->DisableMemPattern(geco->session_options)); // Should prevent some fragmentation & Stops all logging messages "block in memory pattern size is: XXXX but the actual size is: XXXX"
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->EnableCpuMemArena(geco->session_options));
 
     // Initialize Allocators & Sessions
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSession(geco->env, PATH_ENCODER, geco->session_options, &geco->encoder_session));
@@ -167,6 +150,9 @@ void* NewGeco(int useGpu, int gpuId) {
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->decPast_session, &geco->decPast_io_binding));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->gibb_session, &geco->gibb_io_binding));
 
+
+    // Release session options
+    geco->g_ort->ReleaseSessionOptions(geco->session_options);
 
     // Load the SentencePiece model
     geco->processor = initialize_processor(PATH_SP_MODEL);
@@ -238,9 +224,8 @@ void FreeGeco(void* objPtr) {
         RELEASE_RESOURCE(decPast_session, ReleaseSession);
         RELEASE_RESOURCE(gibb_session, ReleaseSession);
         
-        RELEASE_RESOURCE(cuda_options, ReleaseCUDAProviderOptions);
         RELEASE_RESOURCE(run_options, ReleaseRunOptions);
-        RELEASE_RESOURCE(session_options, ReleaseSessionOptions);
+        //RELEASE_RESOURCE(session_options, ReleaseSessionOptions);
         
         if (geco->arena_cfg != NULL) {
             ORT_CLEAN_ON_ERROR(arena_label, geco, geco->g_ort->UnregisterAllocator(geco->env, geco->memory_info));
@@ -725,7 +710,7 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
     geco->g_ort->ClearBoundInputs(geco->decPast_io_binding);
     geco->g_ort->ClearBoundOutputs(geco->decPast_io_binding);
     SetTimerValue("GEC Total", startTime, clock());
-    PrintTimes();
+    //PrintTimes();
 }
 
 
