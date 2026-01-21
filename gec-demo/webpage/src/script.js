@@ -10,7 +10,9 @@ const EXAMPLES = {
     pronouns: `The movie turned out to be a blockbuster hit, who came as a surprise to critics.`,
     homophones: `I except your invitation to the wedding.\n\nThey went on a hike to watch for dear in the forest.\n\nThe puppy gave my finger a playful byte.`,
     plural: `Studies are showing that man process information differently from women.\n\nI wishes I could grant all your wish.\n\nThe bus was running late, which meant all the other bus were as well.`,
-    hyphens: `She jumped from a two story building.\n\nWe offer around the clock coverage.\n\nIf we split the bill evenly, we each owe thirty four dollars.`
+    hyphens: `She jumped from a two story building.\n\nWe offer around the clock coverage.\n\nIf we split the bill evenly, we each owe thirty four dollars.`,
+    misspellings: `I met Mathilde yesterday in Salt Lake City. They have the best bowling rink of all time imo.`,
+    profane: `That is your anus.`,
     // Verbs
     // Comparative & Superlatives
     // Commas
