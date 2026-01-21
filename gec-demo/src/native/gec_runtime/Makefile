@@ -19,8 +19,8 @@ THIRD_DIR    := third_party
 BUILD_DIR    := build
 
 # Flags
-CFLAGS   := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR)
-CXXFLAGS := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR) -std=c++17
+CFLAGS   := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR) -I$(THIRD_DIR)/onnxruntime/include
+CXXFLAGS := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR) -I$(THIRD_DIR)/onnxruntime/include -std=c++17
 
 # Sources (relative to this Makefile)
 C_SRCS   := $(SRC_DIR)/inference.c $(SRC_DIR)/logger.c $(SRC_DIR)/timer.c
