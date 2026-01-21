@@ -20,7 +20,6 @@ import (
 	"gec-demo/src/internal/speechtagger"
 )
 
-
 var (
 	rePrefix  = regexp.MustCompile(`(?i)^translate English to (german|french|romanian)`) // Regex to match "Translate English to (German|French|Romanian)" case-insensitively
 	rePreproc = regexp.MustCompile(`\s*\n+\s*`)
@@ -32,7 +31,7 @@ var (
 	GecoChannels   []chan WorkItem
 
 	IgnoreCollisions = false
-	DoMisspellings   = false
+	DoMisspellings   = true
 )
 
 func init() {
@@ -62,6 +61,14 @@ func init() {
 	if err != nil {
 		fmt.Printf("ERROR: Failed to initialize TaggerModel: %v\n", err)
 		return
+	}
+
+	if DoMisspellings {
+		err = InitSpellChecker()
+		if err != nil {
+			print.Error("failed to initialize SpellChecker: %v\n", err)
+			return
+		}
 	}
 }
 
