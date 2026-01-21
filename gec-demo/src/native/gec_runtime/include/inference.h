@@ -13,23 +13,20 @@
 #include <time.h>
 #include <unistd.h>
 // #include "sentencepiece_wrapper.h"
+#include "config.h"
 #include "logger.h"
 #include "onnxruntime_c_api.h"
 #include "timer.h"
 
 // Constants
 extern bool USE_GPU;
-extern bool ALLOC_REGISTERED;
 
 // Decoder Input/Output Names
 extern char* decoder_output_names[51];
 extern char* decPast_input_names[51];
 extern char* decPast_output_names[25];
 
-#define MAX_BATCH_SIZE 500
-#define MAX_TOKENS 100
-#define GIBB_CLASSES 4
-#define LOGIT_SIZE 32128
+
 
 // G.E.C.O. => Grammar Error Corrector Onnx
 typedef struct {
@@ -45,7 +42,6 @@ typedef struct {
     OrtMemoryInfo* cuda_memory_info;
     OrtRunOptions* run_options;
     OrtSessionOptions* session_options;
-    OrtCUDAProviderOptionsV2* cuda_options;
     OrtArenaCfg* arena_cfg;
     char device_id[8];
 
@@ -91,7 +87,7 @@ typedef struct {
  *
  * @param filename Path of the configuration file to use
  */
-int load_config();
+int load_config(const char* configPath);
 
 /**
  * @brief Initialize a new GECO instance
@@ -99,7 +95,7 @@ int load_config();
  * @param useGpu Boolean to determine if the GPU should be used
  * @param gpuId ID of the gpu to use
  */
-void* NewGeco(int useGpu, int gpuId);
+void* NewGeco(const char* configPath, int useGpu, int gpuId);
 
 /**
  * @brief Frees all of the allocated memory used in this GECO object
