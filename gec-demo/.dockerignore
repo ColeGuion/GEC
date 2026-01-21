@@ -1,0 +1,14 @@
+# .dockerignore
+build/
+**/build/
+**/*.o
+**/*.a
+
+.git/
+.gitignore
+
+# Optional: if models are huge and you prefer mounting them instead of baking into image
+models/
+
+# Node / frontend build artifacts (if you add later)
+webpage/dist/
