@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gec-demo/src/internal/print"
 	"gopkg.in/neurosnap/sentences.v1"
 	"gopkg.in/neurosnap/sentences.v1/data"
 )
@@ -50,12 +51,12 @@ func InitTaggingModel() error {
 	// Load the Sentence Tokenizer
 	b, err := data.Asset("data/english.json")
 	if err != nil {
-		return fmt.Errorf("Error loading english data for sentence tokenizer: %w", err)
+		return fmt.Errorf("failed loading english data for sentence tokenizer: %w", err)
 	}
 	// Load the training data
 	training, err := sentences.LoadTraining(b)
 	if err != nil {
-		return fmt.Errorf("Error loading training data for sentence tokenizer: %w", err)
+		return fmt.Errorf("failed loading training data for sentence tokenizer: %w", err)
 	}
 	// Create the sentence tokenizer
 	SentTokenizer = sentences.NewSentenceTokenizer(training)
@@ -86,6 +87,7 @@ func SplitBySentences(text string) (allTexts []string) {
 // Decode .gob file
 func decodeGob(filePath string, obj any) error {
 	// Use embedded path
+	print.Info("decodeGob() filePath: \x1b[93m%q\x1b[0m", filePath)
 	data, err := modelData.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed reading embedded gob file %q: %w", filePath, err)
@@ -93,7 +95,7 @@ func decodeGob(filePath string, obj any) error {
 
 	dec := gob.NewDecoder(bytes.NewReader(data))
 	if err := dec.Decode(obj); err != nil {
-		return fmt.Errorf("Error decoding gob file: %w", err)
+		return fmt.Errorf("failed decoding gob file: %w", err)
 	}
 	return nil
 }
