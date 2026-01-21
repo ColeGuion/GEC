@@ -95,10 +95,15 @@ func StartServer(port string) {
 	http.HandleFunc("/api/gec", enableCORS(gecHandler))
 	http.HandleFunc("/healthCheck", enableCORS(healthCheck))
 
+	// Serve static webpage 
+	//   webpage/src/index.html  -> http://localhost:8089/
+	http.Handle("/", http.FileServer(http.Dir("webpage/src")))
+
 	// Start the server
 	print.Info("Server starting on port %s", port)
-	print.Info("POST endpoint available at http://localhost%s/api/gec", port)
-	print.Info("Health: http://localhost%s/healthCheck", port)
+	print.Info("Web UI available at http://localhost%s/", port)
+	print.Info("API endpoint at http://localhost%s/api/gec", port)
+	print.Info("Health Check: http://localhost%s/healthCheck", port)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
 		print.Error("%v", err)
