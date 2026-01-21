@@ -10,6 +10,7 @@ import "C"
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -52,27 +53,38 @@ func init() {
 	GecoChannels = make([]chan WorkItem, NumGpuChannels)
 	print.Debug("Total GEC Channels: %d", NumGpuChannels)
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		print.Error("Failed to get current working directory: %v", err)
+		return
+	}
+	cfg_path := cwd + "/src/native/gec_runtime/config/config.json"
+	print.Info("Cfg Path: \x1b[93m%s\x1b[0m", cfg_path)
+
 	for i := range NumGpuChannels {
 		gpuId := i % DeviceCount
 		print.Debug("Creating Geco[%d] for gpu-%v", i, gpuId)
 
 		// Buffered channel with a capacity of `ChanCapacity`
 		GecoChannels[i] = make(chan WorkItem, ChanCapacity)
-		go ClaimGpu(gpuId, GecoChannels[i])
+		go ClaimGpu(cfg_path, gpuId, GecoChannels[i])
 	}
 
 	// Initialize the parts-of-speech tagging model
-	err := speechtagger.InitTaggingModel()
+	err = speechtagger.InitTaggingModel()
 	if err != nil {
 		fmt.Printf("ERROR: Failed to initialize TaggerModel: %v\n", err)
 		return
 	}
 }
 
-func ClaimGpu(gpuId int, ch chan WorkItem) {
+func ClaimGpu(cfg_path string, gpuId int, ch chan WorkItem) {
 	var geco unsafe.Pointer
+	c_path := C.CString(cfg_path)
+	defer cFree(c_path)
+
 	// Allocate a Geco object for the channel
-	geco = C.NewGeco(1, C.int(gpuId))
+	geco = C.NewGeco(c_path, 1, C.int(gpuId))
 	if geco == nil {
 		print.Error("Failed initalizing GECO for gpu:%d", gpuId)
 		return
