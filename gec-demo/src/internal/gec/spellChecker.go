@@ -5,88 +5,95 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"embed"
 
 	hunspell "github.com/sthorne/go-hunspell"
 )
 
 var (
 	huns           *hunspell.Hunhandle
-	SpellingAffix  string // Path to Affix for misspelled words
-	SpellingDict   string // Path to Dictionary for misspelled words
-	SpellingCustom string // List of words to add to our current dictionary
-	DirtyWords     string // List of inappropriate words
-	ProfaneWords   string // List of words to be marked as profanity
+	DirtyPath     string // List of inappropriate words
+	ProfanePath   string // List of words to be marked as profanity
+
+	// Regex Patterns
+	validStr = regexp.MustCompile(`^[a-zA-Z- ]+$`)  // Matches strings only made up of letters, spaces, and hyphens
+	emojiRe  = regexp.MustCompile(`[\p{So}\p{Sk}]`) // Emojis
 )
 
-var (
-	//TODO: Set path locally to workspace and make them work
-	// Path to Affix for misspelled words
-	//SpellingAffix = "/home/tech/Documents/gitDir/GEC/gec-demo/src/internal/spellCheck/bin/index.aff"
-	// Path to Dictionary for misspelled words
-	//SpellingDict = "/home/tech/Documents/gitDir/GEC/gec-demo/src/internal/spellCheck/bin/index.dic"
-	// List of inappropriate words
-	//DirtyWords = "/home/tech/Documents/gitDir/GEC/gec-demo/src/internal/spellCheck/bin/dirty-words.txt"
-	// List of words to be marked as profanity
-	//ProfaneWords = "/home/tech/Documents/gitDir/GEC/gec-demo/src/internal/spellCheck/bin/profane-words.txt"
-	// List of words to add to our current dictionary
-	//SpellingCustom = "/home/tech/Documents/gitDir/GEC/gec-demo/src/internal/spellCheck/bin/spelling_custom.txt"
-	validStr = regexp.MustCompile(`^[a-zA-Z- ]+$`)  // Regex pattern matching strings made up of letters, spaces, & hyphens only
-	emojiRe  = regexp.MustCompile(`[\p{So}\p{Sk}]`) // Regex pattern for emojis
+//go:embed data/*
+var dataFS embed.FS
+
+const (
+	affixFile   = "data/index.aff"
+	dictFile    = "data/index.dic"
+	customFile  = "data/spelling_custom.txt"
+	dirtyFile   = "data/dirty-words.txt"
+	profaneFile = "data/profane-words.txt"
 )
 
-// Resolve paths relative to repo root
-func resolvePath(parts ...string) (string, error) {
-	root := os.Getenv("GEC_ROOT")
-	if root == "" {
-		return "", fmt.Errorf("GEC_ROOT environment variable is not set")
+func writeTempFileFromEmbed(embedPath, prefix string) (string, error) {
+	data, err := dataFS.ReadFile(embedPath)
+	if err != nil {
+		return "", err
 	}
-	return filepath.Join(append([]string{root}, parts...)...), nil
+
+	tmp, err := os.CreateTemp("", prefix)
+	if err != nil {
+		return "", err
+	}
+	defer tmp.Close()
+
+	if _, err := tmp.Write(data); err != nil {
+		return "", err
+	}
+
+	return tmp.Name(), nil
 }
 
-func InitSpellChecke() error {
-	var err error
-
-	SpellingAffix, err = resolvePath("src", "internal", "gec", "data", "index.aff")
+func InitSpellChecker() (err error) {
+	// Path to Affix for misspelled words
+	affPath, err := writeTempFileFromEmbed(affixFile, "gec-aff-")
 	if err != nil {
 		return err
 	}
 
-	SpellingDict, err = resolvePath("src", "internal", "gec", "data", "index.dic")
+	// Path to Dictionary for misspelled words
+	dictPath, err := writeTempFileFromEmbed(dictFile, "gec-dic-")
 	if err != nil {
 		return err
 	}
 
-	SpellingCustom, err = resolvePath("src", "internal", "gec", "data", "spelling_custom.txt")
+	// Files holds list of words to add to our current dictionary
+	customSpellPath, err := writeTempFileFromEmbed(customFile, "gec-custom-")
 	if err != nil {
 		return err
 	}
 
-	DirtyWords, err = resolvePath("src", "internal", "gec", "data", "dirty-words.txt")
+	DirtyPath, err = writeTempFileFromEmbed(dirtyFile, "gec-dirty-")
 	if err != nil {
 		return err
 	}
 
-	ProfaneWords, err = resolvePath("src", "internal", "gec", "data", "profane-words.txt")
+	ProfanePath, err = writeTempFileFromEmbed(profaneFile, "gec-profane-")
 	if err != nil {
 		return err
 	}
 
-	// Load Hunspell
-	huns = hunspell.Hunspell(SpellingAffix, SpellingDict)
+	// Load Hunspell using temp files
+	huns = hunspell.Hunspell(affPath, dictPath)
 
 	// Add more words to the loaded dictionary
-	return addToDictionary()
+	return addToDictionary(customSpellPath)
 }
 
 // Read in a file and add valid words to the dictionary
-func addToDictionary() error {
+func addToDictionary(customSpellPath string) error {
 	// Read in a file
-	file, err := os.Open(SpellingCustom)
+	file, err := os.Open(customSpellPath)
 	if err != nil {
 		return fmt.Errorf("failed opening dictionary file: %w", err)
 	}
@@ -237,7 +244,7 @@ func DirtySpellChecker(data string) ([]Misspell, error) {
 	var misspells []Misspell
 
 	// Open and Read the "dirty-words.txt" file
-	file, err := os.Open(DirtyWords)
+	file, err := os.Open(DirtyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed opening 'dirty-words.txt' file: %w", err)
 	}
@@ -277,7 +284,7 @@ func DirtySpellChecker(data string) ([]Misspell, error) {
 	}
 
 	// Check other bad words .txt file
-	profane_file, err := os.Open(ProfaneWords)
+	profane_file, err := os.Open(ProfanePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed opening 'profane-words.txt' file: %w", err)
 	}
