@@ -3,34 +3,22 @@ package speechtagger
 
 import (
 	"bytes"
+	"embed"
 	"encoding/gob"
 	"fmt"
-	"os"
-	"path/filepath"
-	//"runtime"
 	"strings"
-
-	"gec-demo/src/internal/print"
 
 	"gopkg.in/neurosnap/sentences.v1"
 	"gopkg.in/neurosnap/sentences.v1/data"
 )
 
+//go:embed data/*.gob
+var modelData embed.FS
+
 var (
 	TaggerModel   *Model
 	SentTokenizer *sentences.DefaultSentenceTokenizer
-	TagsGob       string
-	WeightsGob    string
 )
-
-// Resolve paths relative to repo root
-func resolvePath(parts ...string) (string, error) {
-	root := os.Getenv("GEC_ROOT")
-	if root == "" {
-		return "", fmt.Errorf("GEC_ROOT environment variable is not set")
-	}
-	return filepath.Join(append([]string{root}, parts...)...), nil
-}
 
 // Initialize the part-of-speech tagging model
 func InitTaggingModel() error {
@@ -38,24 +26,12 @@ func InitTaggingModel() error {
 	var tags map[string]string
 	var err error
 
-	// Resolve paths to local GEC_ROOT env variable
-	TagsGob, err = resolvePath("src", "internal", "speechtagger", "data", "tags.gob")
-	if err != nil {
-		return err
-	}
-	WeightsGob, err = resolvePath("src", "internal", "speechtagger", "data", "weights.gob")
-	if err != nil {
-		return err
-	}
-	print.Info("Tags-Gob Path: \x1b[36m%q\x1b[0m", TagsGob)
-	print.Info("Weights-Gob Path: \x1b[36m%q\x1b[0m", WeightsGob)
-
 	// Decode the gob files
-	err = decodeGob(TagsGob, &tags)
+	err = decodeGob("data/tags.gob", &tags)
 	if err != nil {
 		return err
 	}
-	err = decodeGob(WeightsGob, &wts)
+	err = decodeGob("data/weights.gob", &wts)
 	if err != nil {
 		return err
 	}
@@ -109,12 +85,13 @@ func SplitBySentences(text string) (allTexts []string) {
 
 // Decode .gob file
 func decodeGob(filePath string, obj any) error {
-	b, err := os.ReadFile(filePath)
+	// Use embedded path
+	data, err := modelData.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("Error reading file: %w", err)
+		return fmt.Errorf("failed reading embedded gob file %q: %w", filePath, err)
 	}
 
-	dec := gob.NewDecoder(bytes.NewReader(b))
+	dec := gob.NewDecoder(bytes.NewReader(data))
 	if err := dec.Decode(obj); err != nil {
 		return fmt.Errorf("Error decoding gob file: %w", err)
 	}
