@@ -13,38 +13,11 @@ import (
 
 // Formats the `Differences` & `Misspells` as JSON text markups return
 // TODO: Fix error handling
-func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibberishScores []GibbResults) (markups []Markup, err_chars int, profanity_words []string, err error) {
+func FormatToJson(text string, Differences []Markup, Misspells []Misspell) (markups []Markup, err_chars int, profanity_words []string, err error) {
 	//var markups []Markup
-	var gibberish_texts []GibbResults
 	//var profanity_words []string
 	text_length := utf8.RuneCountInString(text)
 	err_chars = 0
-
-	// Filter out objects so you are left with those that don't pass the gibberish scores thresholds
-	for _, gibb := range gibberishScores {
-		// Too small of a Clean score or too large of another score (Mild, Noise, Salad) will add you to the gibberish_texts array
-		if (int(gibb.Score.Clean) < CleanThreshold) && (int(gibb.Score.Mild) > MildThreshold || int(gibb.Score.Noise) > NoiseThreshold || int(gibb.Score.WordSalad) > SaladThreshold) {
-			gibberish_texts = append(gibberish_texts, gibb)
-		} else {
-			// Safely extract the text with bounds checking
-			substr, err := GetSubstring(text, gibb.Index, gibb.Length)
-			if err != nil {
-				fmt.Printf("error in GetSubstring() for gibberish check: %v\n", err)
-				continue
-			}
-
-			// Mark as gibberish if there are 6-single letter words for every normal word in a string
-			ratio := singleLetterRatio(substr)
-			if ratio > 6.0 {
-				gibberish_texts = append(gibberish_texts, gibb)
-			}
-		}
-	}
-
-	// Track total error character count
-	for _, score := range gibberish_texts {
-		err_chars += score.Length
-	}
 
 	// Iterate over 'Differences' and create JSON for each
 	for _, diff := range Differences {
@@ -58,9 +31,6 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 		if strings.Trim(substr, "\r\n") == "" {
 			continue
 		}
-
-		// Keep gibberish texts that don't intersect with diffs
-		gibberish_texts = filterIntersectingGibberish(diff.Index, diff.Length, gibberish_texts)
 
 		// Skip markups which index beyond the size of the original text
 		if (diff.Length + diff.Index) > text_length {
@@ -84,9 +54,6 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 		if strings.TrimSpace(substr) == "" {
 			continue
 		}
-
-		// Keep gibberish texts that don't intersect with misspellings
-		gibberish_texts = filterIntersectingGibberish(miss.Index, miss.Length, gibberish_texts)
 
 		// Skip markups which index beyond the size of the original text
 		if (miss.Length + miss.Index) > text_length {
@@ -122,37 +89,6 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 		}
 	}
 
-	// Loop through gibberish_texts
-	for len(gibberish_texts) > 0 {
-		mark_type := "GIBBERISH"
-		gibb := gibberish_texts[0]
-		gibberish_texts = gibberish_texts[1:]
-
-		// Remove intersecting gibberish values
-		// Should set the priority of: Sentences > Sentence Pairs > Paragraphs
-		gibberish_texts = filterIntersectingGibberish(gibb.Index, gibb.Length, gibberish_texts)
-
-		// Skip markups which index beyond the size of the original text
-		if (gibb.Length + gibb.Index) > text_length {
-			print.Warning("Markup '%v' indexes beyond the original text. Text Size: %v. Gibb Markup: %+v", mark_type, text_length, gibb)
-			continue
-		}
-
-		// Marked up gibberish sentence HERE
-		/* substr, err := GetSubstring(text, gibb.Index, gibb.Length)
-		if err != nil {
-			fmt.Printf("error in GetSubstring(%v, %v, %q) for markup, %v", gibb.Index, gibb.Length, text, err)
-		} */
-
-		gibb_markup := Markup{
-			Index:    gibb.Index,
-			Length:   gibb.Length,
-			Message:  "Text is unclear.",
-			Category: mark_type,
-		}
-		markups = append(markups, gibb_markup)
-	}
-
 	// Sort by Offsets
 	sort.Slice(markups, func(i, j int) bool {
 		return markups[i].Index < markups[j].Index
@@ -164,16 +100,6 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell, gibbe
 	}
 
 	return markups, err_chars, profanity_words, err
-	/* // Wrap the markup errors and convert to a []byte
-	wrapper := Wrapper{
-		TextMarkups: markups,
-		ErrorCharacters: err_chars,
-		ProfaneWords: profanity_words,
-	}
-
-	// Convert the markup errors to a []byte
-	jsonData, err = json.MarshalIndent(wrapper, "", "  ")
-	return jsonData, err */
 }
 
 // Split the text into sentences and newline literals with surrounding whitespace
@@ -215,7 +141,7 @@ func PreprocessText(text string) (allTexts []string) {
 	}
 
 	// Modify text starting with a T5 prefix
-	for i, _ := range allTexts {
+	for i := range allTexts {
 		if strings.HasPrefix(allTexts[i], "summarize") {
 			allTexts[i] = strings.Replace(allTexts[i], "summarize", "Summarize", 1)
 		}
@@ -316,46 +242,6 @@ func intersects(index1, length1, index2, length2 int) bool {
 	return index1 < end2 && index2 < end1
 }
 
-// Filters out gibberish texts that intersect with the given index and length
-func filterIntersectingGibberish(index, length int, gibberish_texts []GibbResults) []GibbResults {
-	if IgnoreCollisions {
-		// If we are not searching for intersecting markups then return the passed in array
-		return gibberish_texts
-	}
-	var newGibbs []GibbResults
-	for _, gibb := range gibberish_texts {
-		if !intersects(index, length, gibb.Index, gibb.Length) {
-			newGibbs = append(newGibbs, gibb)
-		}
-	}
-	return newGibbs
-}
-
-func singleLetterRatio(input string) float64 {
-	var singleLetterCount, multiLetterCount int
-	// Split the string into words
-	words := strings.Fields(input)
-
-	for _, word := range words {
-		// Remove punctuation
-		cleaned := strings.TrimFunc(word, func(r rune) bool {
-			return !unicode.IsLetter(r)
-		})
-
-		if len(cleaned) == 1 {
-			singleLetterCount++
-		} else if len(cleaned) > 1 {
-			multiLetterCount++
-		}
-	}
-
-	// Get the ratio
-	if multiLetterCount == 0 {
-		return float64(singleLetterCount)
-	} else {
-		return float64(singleLetterCount) / float64(multiLetterCount)
-	}
-}
 
 // Get accurate index of substring in a string, account for runes
 func RuneIndex(s, substr string) int {

@@ -9,7 +9,6 @@ type GecRequest struct {
 type GecResponse struct {
 	CorrectedText       string        `json:"corrected_text"`
 	TextMarkups         []Markup      `json:"text_markups"`
-	GibberishScores     []GibbResults `json:"gibberish_scores"`
 	CharacterCount      int           `json:"character_count"`
 	ErrorCharacterCount int           `json:"error_character_count"`
 	ContainsProfanity   bool          `json:"contains_profanity"`
@@ -33,7 +32,6 @@ type Misspell struct {
 
 type GrammarResult struct {
 	CorrectText string
-	GibbScores  []GibbResults
 	GpuId       int
 	Err         error
 	ServiceTime float64
@@ -45,22 +43,3 @@ type WorkItem struct {
 	AllTexts []string
 	Ch       chan GrammarResult
 }
-
-type GibbResults struct {
-	Index  int        `json:"index"`
-	Length int        `json:"length"`
-	Score  GibbScores `json:"score"`
-}
-type GibbScores struct {
-	Clean     float32 `json:"clean"`
-	Mild      float32 `json:"mild"`
-	Noise     float32 `json:"noise"`
-	WordSalad float32 `json:"wordSalad"`
-}
-
-/* type Wrapper struct {
-	TextMarkups     []Markup `json:"textMarkups"`
-	ErrorCharacters int      `json:"errorCharacters"`
-	ProfaneWords    []string `json:"profaneWords"`
-}
-*/

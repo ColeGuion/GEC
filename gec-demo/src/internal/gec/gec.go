@@ -14,18 +14,12 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf8"
 	"unsafe"
 
 	"gec-demo/src/internal/print"
 	"gec-demo/src/internal/speechtagger"
 )
 
-// C Variables
-const (
-	maxBatch = C.MAX_BATCH_SIZE // 500
-	nClasses = C.GIBB_CLASSES   // 4
-)
 
 var (
 	rePrefix  = regexp.MustCompile(`(?i)^translate English to (german|french|romanian)`) // Regex to match "Translate English to (German|French|Romanian)" case-insensitively
@@ -37,15 +31,8 @@ var (
 	NumGpuChannels = 1
 	GecoChannels   []chan WorkItem
 
-	// Gibberish Score Threshholds
-	CleanThreshold = 70
-	MildThreshold  = 92
-	NoiseThreshold = 40
-	SaladThreshold = 40
-
 	IgnoreCollisions = false
 	DoMisspellings   = false
-	DoGibb           = false
 )
 
 func init() {
@@ -135,7 +122,6 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 	if gram_result.Err != nil {
 		return nil, fmt.Errorf("error running GEC, %v. Input Text: %q", gram_result.Err, text)
 	}
-	ViewGibbs(gram_result.GibbScores)
 
 	// Define and clean the grammatically corrected text
 	corrected_text := gram_result.CorrectText
@@ -156,14 +142,13 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 
 	// Format data to JSON
 	print.Debug("Formatting data to JSON!")
-	text_markups, err_chars, profanity_words, err := FormatToJson(text, differences, misspells, gram_result.GibbScores)
+	text_markups, err_chars, profanity_words, err := FormatToJson(text, differences, misspells)
 	if err != nil {
 		return nil, fmt.Errorf("error in FormatToJson(), %w", err)
 	}
 
 	gec_result.CorrectedText = corrected_text
 	gec_result.TextMarkups = text_markups
-	gec_result.GibberishScores = gram_result.GibbScores
 	gec_result.CharacterCount = len(text)
 	gec_result.ErrorCharacterCount = err_chars
 	gec_result.ContainsProfanity = len(profanity_words) > 0
@@ -210,7 +195,6 @@ func CorrectGrammar(geco *unsafe.Pointer, gpuId int, text string, all_texts []st
 	chanTime := time.Now()
 	gram_result := GrammarResult{
 		CorrectText: "",
-		GibbScores:  []GibbResults{},
 		GpuId:       gpuId,
 		Err:         nil,
 		ServiceTime: 0.0,
@@ -237,126 +221,9 @@ func CorrectGrammar(geco *unsafe.Pointer, gpuId int, text string, all_texts []st
 	gram_result.CorrectText = C.GoString(c_output) // Convert the C char* to a Go string
 	print.Info("GEC Result: %q", gram_result.CorrectText)
 
-	// GIBBERISH RUN
-	if DoGibb {
-		gibbTime := time.Now()
-		// Get gibberish texts list
-		gibb_texts, gibb_scores := GibbTextList(text, all_texts)
-		print.Debug("Gibb Sizes: %d - %d", len(gibb_texts), len(gibb_scores))
-
-		// Convert Go strings to C strings
-		c_gibbs, cgibb_cleanup := goStringsToC(gibb_texts)
-		defer cgibb_cleanup()
-
-		// Allocate C memory for probs
-		probs := make([][nClasses]float64, maxBatch)
-		cProbs := (*[nClasses]C.double)(unsafe.Pointer(&probs[0])) // Type: *[4]main._Ctype_double
-
-		// Get Gibberish Scores
-		C.GecoGibb(*geco, cProbs, &c_gibbs[0], C.int(len(gibb_texts)))
-		print.Info("Completed C.GecoGibb run!")
-
-		// Convert double** to []GibbResults
-		for i, gibb := range gibb_scores {
-			print.Debug("Gibb[%d] running", i)
-			if i >= maxBatch {
-				break // safety guard – C only wrote maxBatch rows
-			}
-			// Skip newline literal(s) strings
-			if gibb.Index == -1 {
-				print.Debug("Gibb[%d] == Newline Literal String", i)
-				continue
-			}
-			print.Debug("Gibb[%d] appending this gibb score: %+v", i, gibb)
-			// Create a Go slice for the ith row
-			row := probs[i] // row is [4]float64, directly readable
-			gibb.Score = GibbScores{
-				Clean:     float32(row[0]),
-				Mild:      float32(row[1]),
-				WordSalad: float32(row[2]),
-				Noise:     float32(row[3]),
-			}
-			gram_result.GibbScores = append(gram_result.GibbScores, gibb)
-		}
-
-		print.Info("Full Gibberish Time: %v", time.Since(gibbTime).Seconds())
-	}
 	duration := time.Since(chanTime).Seconds()
 	gram_result.ServiceTime = duration
 	return gram_result
-}
-
-// Returns list of strings with original texts, sentence pairs, and full paragraphs (IN THIS ORDER)
-func GibbTextList(baseText string, allTexts []string) ([]string, []GibbResults) {
-	gibbScores := []GibbResults{} // Track index & length of each text
-	newTexts := []string{}
-
-	paragraph_texts := []string{}
-	searchStart := 0
-	pgIndex := 0 // Track index where paragraph began
-	for i, text := range allTexts {
-		textLen := utf8.RuneCountInString(text)
-		// Newline Literal(s) String - Append string and continue
-		if strings.Contains(text, "\n") {
-			newTexts = append(newTexts, text)
-			gibbScores = append(gibbScores, GibbResults{Index: -1, Length: -1, Score: GibbScores{}})
-			searchStart += textLen
-			continue
-		}
-
-		// Get index where text is found in remaining string
-		text_index := RuneIndex(baseText[searchStart:], text)
-
-		if text_index == -1 && strings.HasPrefix(text, "Summarize") {
-			// Handle indexing assuming "summarize" prefix got changed to "Summarize"
-			print.Debug("Indexing for text with T5 prefix")
-			text_index = RuneIndex(baseText[searchStart:], text[1:]) - 1
-			print.Debug("New Text Index: %v", text_index)
-		}
-
-		// Add single sentence
-		newTexts = append(newTexts, text)
-		gibbScores = append(gibbScores, GibbResults{Index: (text_index + searchStart), Length: textLen, Score: GibbScores{}})
-		paragraph_texts = append(paragraph_texts, text)
-		if len(paragraph_texts) == 1 {
-			// If this was the start of the paragraph, mark its starting index
-			pgIndex = text_index + searchStart
-		}
-
-		// Helper function to check for duplicates in gibbScores
-		// This prevents repeated markups when adding for a paragraph or sentence pair
-		hasDuplicate := func(idx, length int) bool {
-			for _, g := range gibbScores {
-				if g.Index == idx && g.Length == length {
-					return true
-				}
-			}
-			return false
-		}
-
-		// If the next sentence is the last OR a Newline String then complete and add the paragraph
-		if (i == len(allTexts)-1) || (strings.Contains(allTexts[i+1], "\n")) {
-			// Complete and append paragraph
-			full_paragraph := strings.Join(paragraph_texts, " ")
-			textLen = utf8.RuneCountInString(full_paragraph)
-			if !hasDuplicate(pgIndex, textLen) {
-				newTexts = append(newTexts, full_paragraph)
-				gibbScores = append(gibbScores, GibbResults{Index: pgIndex, Length: textLen, Score: GibbScores{}})
-			}
-			paragraph_texts = []string{}
-		} else {
-			// Add sentence pair
-			textPair := text + " " + allTexts[i+1]
-			textLen = utf8.RuneCountInString(textPair)
-			if !hasDuplicate(text_index+searchStart, textLen) {
-				newTexts = append(newTexts, textPair)
-				gibbScores = append(gibbScores, GibbResults{Index: (text_index + searchStart), Length: textLen, Score: GibbScores{}})
-			}
-		}
-		searchStart += text_index
-	}
-
-	return newTexts, gibbScores
 }
 
 // Converts go strings to C strings and returns a cleanup function
