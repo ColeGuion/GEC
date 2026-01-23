@@ -40,9 +40,7 @@ RUN go mod download
 # Copy source code
 COPY src ./src
 COPY webpage ./webpage
-
-# Ensure vendored ONNX Runtime headers + libs are in the image
-#COPY src/native/gec_runtime/third_party/onnxruntime ./src/native/gec_runtime/third_party/onnxruntime
+#COPY models ./models
 
 
 # Builds native runtime library (libgec.a)
@@ -51,6 +49,7 @@ RUN make -C src/native/gec_runtime
 # Build Go server (CGO enabled)
 ENV CGO_ENABLED=1
 RUN go build -o /app/gec-server ./src/cmd/gec-server
+
 
 ############################
 # 2) Runtime stage
@@ -61,26 +60,48 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Runtime dependencies
 # - libstdc++6: for C++ runtime
-# - libhunspell-1.7-0: hunspell runtime shared lib (Ubuntu 22.04)
+# - libhunspell-1.7-0: hunspell runtime shared lib (Ubuntu 24.04)
+# - libjson-c5
+# - libtcmalloc-minimal4
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libstdc++6 \
     libhunspell-1.7-0 \
     libjson-c5 \
+    libtcmalloc-minimal4 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+## Add Python & huggingface_hub CLI to download the model if need be
+#? May need to combine with other dependecies right above
+#RUN apt-get update && apt-get install -y --no-install-recommends \
+#    python3 python3-pip \
+#    && pip3 install --no-cache-dir --upgrade huggingface_hub \
+#    && rm -rf /var/lib/apt/lists/*
+## Copy entrypoint script
+#COPY docker/entrypoint.sh /app/entrypoint.sh
+#ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Copy webpage assets
+COPY --from=builder /app/webpage /app/webpage
+
+# Copy shared libraries
+COPY --from=builder /app/src/native/gec_runtime/third_party/onnxruntime/lib/ /usr/local/lib/
+COPY --from=builder /app/src/native/gec_runtime/third_party/sentencepiece/lib/ /usr/local/lib/
+COPY --from=builder /app/src/native/gec_runtime/third_party/icu/lib/ /usr/local/lib/
+
 # Copy server binary
 COPY --from=builder /app/gec-server /app/gec-server
 
-# Copy models + webpage assets + data files used by your Go packages
-#COPY --from=builder /app/models /app/models
-COPY --from=builder /app/webpage /app/webpage
+# Copy source config file
+#COPY --from=builder /app/src/native/gec_runtime/config /app/src/native/gec_runtime/config
 #COPY --from=builder /app/src /app/src
+#COPY --from=builder /app/models /app/models
 
-# Copy ONNX Runtime shared libraries
-COPY --from=builder /app/src/native/gec_runtime/third_party/onnxruntime/lib/ /usr/local/lib/
+
+# Copy model files
+#COPY --from=builder /app/models/GecModel /models/GecModel
 
 # Register shared libraries
 RUN ldconfig

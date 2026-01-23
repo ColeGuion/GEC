@@ -22,7 +22,7 @@ NATIVE_DIR    := src/native/gec_runtime
 NATIVE_LIB    := $(NATIVE_DIR)/build/libgec.a
 
 GO_CMD_DIR    := src/cmd/gec-server
-GO_BIN_DIR    := build/bin
+GO_BIN_DIR    := build
 GO_BIN        := $(GO_BIN_DIR)/$(APP_NAME)
 
 # Go environment
@@ -30,10 +30,13 @@ GO            := go
 GOFLAGS       :=
 CGO_ENABLED   := 1
 
+
 # Export CGO vars so Go can find libgec.a
 export CGO_ENABLED := 1
 export CGO_CFLAGS  := -I$(NATIVE_DIR)/include
-export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -lstdc++
+export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -lstdc++ 
+#export CGO_CFLAGS  := -I$(NATIVE_DIR)/include -I$(NATIVE_DIR)/third_party/ -I$(NATIVE_DIR)/third_party/onnxruntime/include  -I$(NATIVE_DIR)/third_party/sentencepiece/include
+#export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -L$(NATIVE_DIR)/third_party/onnxruntime/lib -L$(NATIVE_DIR)/third_party/sentencepiece/lib -L$(NATIVE_DIR)/third_party/icu/lib -lonnxruntime -lsentencepiece -lm -ldl -ljson-c -licuuc -licudata -lstdc++
 
 # ---------- Targets ----------
 .PHONY: all native server run clean info
@@ -55,6 +58,21 @@ $(GO_BIN): $(NATIVE_LIB)
 	@file $(GO_BIN) | grep -q "executable" || (echo "ERROR: $(GO_BIN) is not an executable" && file $(GO_BIN) && exit 1)
 
 server: $(GO_BIN)
+
+# ---------- Docker ----------
+dockBuild:
+	docker build -f docker/Dockerfile -t gec-demo:latest .
+
+# Mount the model to the container and run it
+dockRun:
+	docker run --rm -p 8089:8089 -v "$(shell pwd)/models:/models" gec-demo:latest
+
+#dock:
+#	docker build -f docker/Dockerfile -t gec-demo:latest . && docker run --rm -p 8089:8089 --name gec-demo gec-demo:latest
+
+#dock:
+#	docker build -f docker/Dockerfile -t gec-demo:latest .
+#	docker run --rm -p 8089:8089 -e HF_REPO_ID="$(HF_REPO)" -e HF_TOKEN="$(HF_TOKEN)" -v "$(pwd)/models:/models" --name gec-demo gec-demo:latest
 
 # ---------- Run ----------
 run: server
