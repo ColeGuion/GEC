@@ -3,7 +3,7 @@
 ############################
 # 1) Builder stage
 ############################
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -11,17 +11,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     make \
-    gcc-12 g++-12 \
-    gcc g++ \
+    gcc-12 g++-12 gcc g++ \
     wget \
     pkg-config \
+    libhunspell-dev \
+    libjson-c-dev \
+    libtcmalloc-minimal4 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set GCC 12 as default
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
 
-# Download and install Go 1.24.2
+# Download and Install Go 1.24.2
 RUN wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
     tar -C /usr/local -xzf /tmp/go.tar.gz && \
     rm /tmp/go.tar.gz
@@ -38,33 +40,33 @@ RUN go mod download
 # Copy source code
 COPY src ./src
 COPY webpage ./webpage
-#COPY models ./models
 
-# Build native runtime library (libgec.a)
+# Ensure vendored ONNX Runtime headers + libs are in the image
+#COPY src/native/gec_runtime/third_party/onnxruntime ./src/native/gec_runtime/third_party/onnxruntime
+
+
+# Builds native runtime library (libgec.a)
 RUN make -C src/native/gec_runtime
 
 # Build Go server (CGO enabled)
-# If your top-level Makefile already sets CGO flags correctly, you can do: RUN make server
-#RUN CGO_ENABLED=1 go build -o /app/build/gec-server ./src/cmd/gec-server
-RUN CGO_ENABLED=1 \
-    CGO_CFLAGS="-Isrc/native/gec_runtime/include -Isrc/native/gec_runtime/third_party/onnxruntime/include" \
-    CGO_LDFLAGS="-Lsrc/native/gec_runtime/build -lgec \
-                 -Lsrc/native/gec_runtime/third_party/onnxruntime/lib -lonnxruntime \
-                 -lstdc++" \
-    go build -o /app/gec-server ./src/cmd/gec-server
-
+ENV CGO_ENABLED=1
+RUN go build -o /app/gec-server ./src/cmd/gec-server
 
 ############################
 # 2) Runtime stage
 ############################
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:24.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Runtime dependencies
+# - libstdc++6: for C++ runtime
+# - libhunspell-1.7-0: hunspell runtime shared lib (Ubuntu 22.04)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libstdc++6 \
+    libhunspell-1.7-0 \
+    libjson-c5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -75,7 +77,7 @@ COPY --from=builder /app/gec-server /app/gec-server
 # Copy models + webpage assets + data files used by your Go packages
 #COPY --from=builder /app/models /app/models
 COPY --from=builder /app/webpage /app/webpage
-COPY --from=builder /app/src /app/src
+#COPY --from=builder /app/src /app/src
 
 # Copy ONNX Runtime shared libraries
 COPY --from=builder /app/src/native/gec_runtime/third_party/onnxruntime/lib/ /usr/local/lib/
@@ -83,8 +85,7 @@ COPY --from=builder /app/src/native/gec_runtime/third_party/onnxruntime/lib/ /us
 # Register shared libraries
 RUN ldconfig
 
-# Make the service use stable, repo-relative paths
-ENV GEC_ROOT=/app
+# Stable Runtime Paths
 ENV MODEL_ROOT=/app/models
 ENV PORT=8089
 
