@@ -8,7 +8,7 @@ build/
 .gitignore
 
 # Optional: if models are huge and you prefer mounting them instead of baking into image
-models/
+# models/
 
 # Node / frontend build artifacts (if you add later)
 webpage/dist/
