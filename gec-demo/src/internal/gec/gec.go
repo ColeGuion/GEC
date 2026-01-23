@@ -1,9 +1,18 @@
-// src/internal/gec/server.go
+// src/internal/gec/gec.go
 package gec
 
 /*
-#cgo CFLAGS:  -I${SRCDIR}/../../native/gec_runtime/include
-#cgo LDFLAGS: ${SRCDIR}/../../native/gec_runtime/build/libgec.a -lstdc++ -lm -ldl -ljson-c -lsentencepiece -licuuc -licudata -lonnxruntime -lonnxruntime_providers_shared -lonnxruntime_providers_cuda -lcuda
+#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/include
+#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party 
+#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party/onnxruntime/include
+#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/include
+
+#cgo LDFLAGS: ${SRCDIR}/../../native/gec_runtime/build/libgec.a 
+#cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/onnxruntime/lib
+#cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/lib 
+#cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/icu/lib
+#cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata
+
 #include "inference.h"
 */
 import "C"
