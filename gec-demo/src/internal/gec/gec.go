@@ -3,15 +3,15 @@ package gec
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/include
-#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party 
+#cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party
 #cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party/onnxruntime/include
 #cgo CFLAGS: -I${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/include
 
-#cgo LDFLAGS: ${SRCDIR}/../../native/gec_runtime/build/libgec.a 
+#cgo LDFLAGS: ${SRCDIR}/../../native/gec_runtime/build/libgec.a
 #cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/onnxruntime/lib
-#cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/lib 
+#cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/lib
 #cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/icu/lib
-#cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata
+#cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata -lonnxruntime_providers_shared -lonnxruntime_providers_cuda
 
 #include "inference.h"
 */
@@ -19,7 +19,6 @@ import "C"
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -48,13 +47,8 @@ func init() {
 	GecoChannels = make([]chan WorkItem, NumGpuChannels)
 	print.Debug("Total GEC Channels: %d", NumGpuChannels)
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		print.Error("Failed to get current working directory: %v", err)
-		return
-	}
-	cfg_path := cwd + "/src/native/gec_runtime/config/config.json"
-	print.Info("Cfg Path: \x1b[93m%s\x1b[0m", cfg_path)
+	//TODO: Set from config or elsewhere
+	cLogLevel := 4
 
 	for i := range NumGpuChannels {
 		gpuId := i % DeviceCount
@@ -62,11 +56,11 @@ func init() {
 
 		// Buffered channel with a capacity of `ChanCapacity`
 		GecoChannels[i] = make(chan WorkItem, ChanCapacity)
-		go ClaimGpu(cfg_path, gpuId, GecoChannels[i])
+		go ClaimGpu(cLogLevel, gpuId, GecoChannels[i])
 	}
 
 	// Initialize the parts-of-speech tagging model
-	err = speechtagger.InitTaggingModel()
+	err := speechtagger.InitTaggingModel()
 	if err != nil {
 		fmt.Printf("ERROR: Failed to initialize TaggerModel: %v\n", err)
 		return
@@ -81,13 +75,11 @@ func init() {
 	}
 }
 
-func ClaimGpu(cfg_path string, gpuId int, ch chan WorkItem) {
+func ClaimGpu(logLevel int, gpuId int, ch chan WorkItem) {
 	var geco unsafe.Pointer
-	c_path := C.CString(cfg_path)
-	defer cFree(c_path)
 
 	// Allocate a Geco object for the channel
-	geco = C.NewGeco(c_path, 1, C.int(gpuId))
+	geco = C.NewGeco(C.int(logLevel), 0, C.int(gpuId))
 	if geco == nil {
 		print.Error("Failed initalizing GECO for gpu:%d", gpuId)
 		return

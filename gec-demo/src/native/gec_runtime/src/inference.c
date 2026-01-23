@@ -2,12 +2,10 @@
 #include "sentencepiece_wrapper.h"
 
 // Path Variables
-static char PATH_ENCODER[1000];
-static char PATH_DECODER[1000];
-static char PATH_DECODER_PAST[1000];
-static char PATH_GIBB_TOKENIZER[1000];
-static char PATH_GIBB[1000];
-static char PATH_SP_MODEL[1000];
+static char PATH_ENCODER[1000] = "/models/GecModel/encoder_model.onnx";
+static char PATH_DECODER[1000] = "/models/GecModel/decoder_model.onnx";
+static char PATH_DECODER_PAST[1000] = "/models/GecModel/decoder_with_past_model.onnx";
+static char PATH_SP_MODEL[1000] = "/models/GecModel/spiece.model";
 
 // Decoder Input/Output Names
 char* decoder_output_names[51] = {"logits", "present.0.decoder.key", "present.0.decoder.value", "present.0.encoder.key", "present.0.encoder.value", "present.1.decoder.key", "present.1.decoder.value", "present.1.encoder.key", "present.1.encoder.value", "present.2.decoder.key", "present.2.decoder.value", "present.2.encoder.key", "present.2.encoder.value", "present.3.decoder.key", "present.3.decoder.value", "present.3.encoder.key", "present.3.encoder.value", "present.4.decoder.key", "present.4.decoder.value", "present.4.encoder.key", "present.4.encoder.value", "present.5.decoder.key", "present.5.decoder.value", "present.5.encoder.key", "present.5.encoder.value", "present.6.decoder.key", "present.6.decoder.value", "present.6.encoder.key", "present.6.encoder.value", "present.7.decoder.key", "present.7.decoder.value", "present.7.encoder.key", "present.7.encoder.value", "present.8.decoder.key", "present.8.decoder.value", "present.8.encoder.key", "present.8.encoder.value", "present.9.decoder.key", "present.9.decoder.value", "present.9.encoder.key", "present.9.encoder.value", "present.10.decoder.key", "present.10.decoder.value", "present.10.encoder.key", "present.10.encoder.value", "present.11.decoder.key", "present.11.decoder.value", "present.11.encoder.key", "present.11.encoder.value"};
@@ -17,13 +15,11 @@ char* decPast_pkv_inputs[25] = {"", "past_key_values.0.decoder.key", "past_key_v
 
 bool USE_GPU = false;
 bool USING_F16_MODEL = true;   // true if using model with _Float16 values
-//const char* CONFIG_PATH = "/home/tech/Documents/gitDir/GEC/gec-demo/src/native/gec_runtime/config/config.json";
 
-
-int load_config(const char* configPath) {
+/* int load_config(const char* configPath) {
     clock_t startTime = clock();
-
     Log(INFO, "Config Path: \x1b[1;92m%s\x1b[0m", configPath);
+
     // Read and parse the JSON file
     struct json_object *parsed_json;
     parsed_json = json_object_from_file(configPath);
@@ -33,15 +29,11 @@ int load_config(const char* configPath) {
     }
 
     // Assign JSON values to variables
-    struct json_object *path_onnx, *path_gibb, *log_level;
+    struct json_object *path_onnx, *log_level;
     char onnxPath[100];
-    char gibbPath[100];
 
     if (json_object_object_get_ex(parsed_json, "logLevel", &log_level))
         LOG_LEVEL = json_object_get_int(log_level);
-
-    if (json_object_object_get_ex(parsed_json, "gibberish_model_path", &path_gibb))
-        strcpy(gibbPath, json_object_get_string(path_gibb));
 
     if (json_object_object_get_ex(parsed_json, "gec_model_path", &path_onnx)) 
         strcpy(onnxPath, json_object_get_string(path_onnx));
@@ -50,25 +42,29 @@ int load_config(const char* configPath) {
     snprintf(PATH_DECODER, sizeof(PATH_DECODER), "%s%s", onnxPath, "/decoder_model.onnx");
     snprintf(PATH_DECODER_PAST, sizeof(PATH_DECODER_PAST), "%s%s", onnxPath, "/decoder_with_past_model.onnx");
     snprintf(PATH_SP_MODEL, sizeof(PATH_SP_MODEL), "%s%s", onnxPath, "/spiece.model");
-    snprintf(PATH_GIBB, sizeof(PATH_GIBB), "%s%s", gibbPath, "/model.onnx");
-    snprintf(PATH_GIBB_TOKENIZER, sizeof(PATH_GIBB_TOKENIZER), "%s%s", gibbPath, "/tokenizer.json");
 
     // Close the file and free memory
     json_object_put(parsed_json);
     SetTimerValue("Load Config", startTime, clock());
     return 0;
-}
+} */
+
+
 
 // Initialize a new GECO instance
-void* NewGeco(const char* configPath, int useGpu, int gpuId) {
+void* NewGeco(int logLevel, int useGpu, int gpuId) {
     clock_t startTime = clock();
     Log(DEBUG, "Initializing a new Geco object...");
+    char* check = "\x1b[92m✓\x1b[0m";
+
+    // Set log level
+    LOG_LEVEL = logLevel;
 
     // Load config
-    if (load_config(configPath) != 0) {
+    /* if (load_config() != 0) {
         Log(ERROR, "Failed loading config!");
         return NULL;
-    }
+    } */
 
     // Allocate memory for GECO object
     Geco* geco = (Geco*)malloc(sizeof(Geco));
@@ -92,28 +88,33 @@ void* NewGeco(const char* configPath, int useGpu, int gpuId) {
     // Set device_id
     if (useGpu) USE_GPU = true;
     snprintf(geco->device_id, sizeof(geco->device_id), USE_GPU ? "gpu:%d" : "cpu", gpuId);
-    Log(DEBUG, "  - Using Device: \"%s\"", geco->device_id);
+    Log(DEBUG, "Device: \"%s\"", geco->device_id);
+    Log(DEBUG, "USE_GPU: %d", USE_GPU);
 
     // Create an ONNX Runtime environment
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &geco->env));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &geco->memory_info));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSessionOptions(&geco->session_options));  // Session options
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateRunOptions(&geco->run_options));          // Run options
+    Log(DEBUG, "%s ORT Environment Created", check);
 
     // Arena Configuration
     const char* keys[] = {"arena_extend_strategy"}; 
     const size_t values[] = {0};
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateArenaCfgV2(keys, values, 1, &geco->arena_cfg));
+    Log(DEBUG, "%s Arena config", check);
 
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetIntraOpNumThreads(geco->session_options, 4));   // 1
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetInterOpNumThreads(geco->session_options, 2));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->SetSessionGraphOptimizationLevel(geco->session_options, ORT_ENABLE_ALL));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->DisableMemPattern(geco->session_options)); // Should prevent some fragmentation & Stops all logging messages "block in memory pattern size is: XXXX but the actual size is: XXXX"
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->EnableCpuMemArena(geco->session_options));
+    Log(DEBUG, "%s Setup Memory and Threads", check);
 
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_env_allocators", "1"));       // Use the environment's allocators
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.dynamic_block_base", "4"));       // Improves gpu performance
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_device_allocator_for_initializers", "1"));
+    Log(DEBUG, "%s Added Session Configs", check);
 
     if (USE_GPU) {
         // Create CUDA Memory info
@@ -133,22 +134,25 @@ void* NewGeco(const char* configPath, int useGpu, int gpuId) {
     } else {
         // Create Memory Info for CPU
         ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddRunConfigEntry(geco->run_options, "memory.enable_memory_arena_shrinkage", "cpu:0"));
+        Log(DEBUG, "%s Added CPU Run Configs", check);
     }
+    Log(DEBUG, "%s Added Run Configs", check);
 
     // Initialize Allocators & Sessions
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSession(geco->env, PATH_ENCODER, geco->session_options, &geco->encoder_session));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSession(geco->env, PATH_DECODER, geco->session_options, &geco->decoder_session));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSession(geco->env, PATH_DECODER_PAST, geco->session_options, &geco->decPast_session));
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateSession(geco->env, PATH_GIBB, geco->session_options, &geco->gibb_session));
+    Log(DEBUG, "%s Initialized Allocators & Sessions", check);
 
     // Sinlge shared allocator
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateAllocator(geco->encoder_session, geco->memory_info, &geco->allocator));
+    Log(DEBUG, "%s Created Allocator", check);
 
     // IO Bindings
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->encoder_session, &geco->enc_io_binding));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->decoder_session, &geco->dec_io_binding));
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->decPast_session, &geco->decPast_io_binding));
-    ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateIoBinding(geco->gibb_session, &geco->gibb_io_binding));
+    Log(DEBUG, "%s Created IO Bindings", check);
 
 
     // Release session options
@@ -713,127 +717,3 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
     //PrintTimes();
 }
 
-
-// Function to execute inference using the Geco context
-void GecoGibb(void* context, double probs[MAX_BATCH_SIZE][GIBB_CLASSES], char** texts, int num_batches) {
-    // Check if the context is valid
-    if (context == NULL) {
-        Log(ERROR, "Invalid Gibberish context!");
-        return;
-    }
-
-    // Cast the context to Geco pointer
-    Geco* geco = (Geco*)context;
-
-    // Call the InferGibb function with the geco and input texts
-    InferGibb(geco, probs, texts, num_batches);
-}
-
-void InferGibb(Geco* geco, double probs[MAX_BATCH_SIZE][GIBB_CLASSES], char** texts, int num_batches) {
-    clock_t startTime = clock();
-    geco->input_tensor = NULL;
-    geco->output_tensor = NULL;
-    Tokenized_WP_Output tokenized_texts;
-
-    // Tokenize the input texts
-    tokenized_texts = batch_gibb_texts(PATH_GIBB_TOKENIZER, texts, num_batches);
-    SetTimerValue("Gibb Preproc", startTime, clock());
-    int batchSize = tokenized_texts.shape[0];
-
-    // Reset probs array to 0
-    for (int i=0; i<MAX_BATCH_SIZE; i++) {
-        for (int j=0; j<GIBB_CLASSES; j++) {
-            probs[i][j] = 0.0;
-        }
-    }
-
-    // Tensor: "input_ids"
-    int64_t data_len = tokenized_texts.shape[0] * tokenized_texts.shape[1] * sizeof(int64_t);
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->CreateTensorWithDataAsOrtValue(
-        geco->memory_info, 
-        tokenized_texts.ids, 
-        data_len, 
-        tokenized_texts.shape, 
-        2, 
-        ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64, 
-        &geco->input_tensor
-    ));
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->BindInput(geco->gibb_io_binding, "input_ids", geco->input_tensor));
-    free_inpTensor(geco);
-
-    // Tensor: "attention_mask"
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->CreateTensorWithDataAsOrtValue(
-        geco->memory_info, 
-        tokenized_texts.attention_mask, 
-        data_len, 
-        tokenized_texts.shape, 
-        2, 
-        ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64, 
-        &geco->input_tensor
-    ));
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->BindInput(geco->gibb_io_binding, "attention_mask", geco->input_tensor));
-    free_inpTensor(geco);
-
-
-    // Tensor: "logits"
-    int64_t logit_shape[2] = {batchSize, GIBB_CLASSES};
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->CreateTensorAsOrtValue(geco->allocator, logit_shape, 2, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &geco->output_tensor));
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->BindOutput(geco->gibb_io_binding, "logits", geco->output_tensor));
-
-    // Run the model
-    clock_t gibbTime = clock();
-    struct timespec gpuTime;
-    clock_gettime(CLOCK_MONOTONIC, &gpuTime);
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->RunWithBinding(geco->gibb_session, geco->run_options, geco->gibb_io_binding));
-    SetGpuTime(gpuTime);
-    SetTimerValue("Gibb Model Run", gibbTime, clock());
-
-    // Perform softmax on an array of logits to convert them to probabilities
-    clock_t softmaxTime = clock();
-    float* logitData;
-    ORT_CLEAN_ON_ERROR(gibberish_cleanup, geco, geco->g_ort->GetTensorMutableData(geco->output_tensor, (void**)&logitData));
-
-    for (int seqNum = 0; seqNum < batchSize; seqNum++) {
-        int idx = seqNum * GIBB_CLASSES;
-        int64_t max_logit = logitData[idx];
-
-        // Find the maximum logit for numerical stability
-        for (int i = 1; i < GIBB_CLASSES; i++) {
-            if (logitData[idx+i] > max_logit) {
-                max_logit = logitData[idx+i];
-            }
-        }
-
-        // Compute exponentials and sum them
-        double sum = 0.0;
-        for (int i = 0; i < GIBB_CLASSES; i++) {
-            probs[seqNum][i] = exp(logitData[idx+i] - max_logit); // Subtract max_logit for numerical stability
-            sum += probs[seqNum][i];
-        }
-
-        // Normalize the probabilities
-        for (int i = 0; i < GIBB_CLASSES; i++) {
-            probs[seqNum][i] /= sum;
-            probs[seqNum][i] *= 100;
-        }
-    }
-    SetTimerValue("Calculate Softmax", softmaxTime, clock());
-
-    gibberish_cleanup:
-    free_tokenized_wp_output(tokenized_texts);
-    free_inpTensor(geco);
-    if (geco->output_tensor != NULL) {
-        geco->g_ort->ReleaseValue(geco->output_tensor);
-        geco->output_tensor = NULL;
-    }
-    logitData = NULL;
-    // Clear bindings
-    geco->g_ort->ClearBoundInputs(geco->gibb_io_binding);
-    geco->g_ort->ClearBoundOutputs(geco->gibb_io_binding);
-    SetTimerValue("Gibberish Total", startTime, clock());
-    malloc_trim(0); // Release unused data in the heap
-    //printTimes();
-    //Log(INFO, "Total Time in %s = %.3f", geco->device_id, allTimes[15]);
-}
-
- 

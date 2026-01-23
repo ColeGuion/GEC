@@ -2,7 +2,7 @@
 #define INFERENCE_H
 
 #include <assert.h>
-#include <json-c/json.h>
+//#include <json-c/json.h>
 #include <malloc.h>
 #include <math.h>
 #include <stdarg.h>
@@ -25,8 +25,6 @@ extern bool USE_GPU;
 extern char* decoder_output_names[51];
 extern char* decPast_input_names[51];
 extern char* decPast_output_names[25];
-
-
 
 // G.E.C.O. => Grammar Error Corrector Onnx
 typedef struct {
@@ -87,7 +85,7 @@ typedef struct {
  *
  * @param filename Path of the configuration file to use
  */
-int load_config(const char* configPath);
+//int load_config(const char* configPath);
 
 /**
  * @brief Initialize a new GECO instance
@@ -95,7 +93,7 @@ int load_config(const char* configPath);
  * @param useGpu Boolean to determine if the GPU should be used
  * @param gpuId ID of the gpu to use
  */
-void* NewGeco(const char* configPath, int useGpu, int gpuId);
+void* NewGeco(int logLevel, int useGpu, int gpuId);
 
 /**
  * @brief Frees all of the allocated memory used in this GECO object
@@ -134,8 +132,7 @@ bool checkRepeating(int* arr, int lastInd);
  *
  * @return 0 if successful, -1 if an error occurs
  */
-int getMaxTokens(
-    Geco* geco, int64_t* newTokens, int batchSize, int* completed_sequences, int runNum);
+int getMaxTokens(Geco* geco, int64_t* newTokens, int batchSize, int* completed_sequences, int runNum);
 
 
 /**
@@ -180,24 +177,5 @@ void runDecoders(Geco* geco, int batchSize);
  */
 void GecoRun(void* context, char** texts, int num_texts, char** result);
 void InferModel(Geco* geco, char** texts, int num_texts, char** result);
-
-/**
- * @brief Function called by a GECO object to use its context for detecting gibberish.
- * Converts void* to Geco* and runs gibberish detection in InferGibb()
- *
- * @param context GECO object to run the inference with
- * @param probs Pre-allocated array to be filled with gibberish class predictions
- * @param texts Array of texts to be processed
- * @param num_batches Number of texts
- */
-void GecoGibb(void* context,
-              double probs[MAX_BATCH_SIZE][GIBB_CLASSES],
-              char** texts,
-              int num_batches);
-
-void InferGibb(Geco* geco,
-               double probs[MAX_BATCH_SIZE][GIBB_CLASSES],
-               char** texts,
-               int num_batches);
 
 #endif // INFERENCE_H
