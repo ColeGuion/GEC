@@ -1,4 +1,4 @@
-// src/internal/api/server.go
+// src/internal/api/serve.go
 // routes + handlers (POST /api/gec, /healthCheck)
 package api
 
