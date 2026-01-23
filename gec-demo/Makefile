@@ -34,7 +34,6 @@ CGO_ENABLED   := 1
 export CGO_ENABLED := 1
 export CGO_CFLAGS  := -I$(NATIVE_DIR)/include
 export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -lstdc++
-export GEC_ROOT := $(CURDIR)
 
 # ---------- Targets ----------
 .PHONY: all native server run clean info
