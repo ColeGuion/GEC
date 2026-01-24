@@ -2,7 +2,6 @@
 #define INFERENCE_H
 
 #include <assert.h>
-//#include <json-c/json.h>
 #include <malloc.h>
 #include <math.h>
 #include <stdarg.h>
@@ -12,14 +11,10 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-// #include "sentencepiece_wrapper.h"
 #include "config.h"
 #include "logger.h"
 #include "onnxruntime_c_api.h"
 #include "timer.h"
-
-// Constants
-extern bool USE_GPU;
 
 // Decoder Input/Output Names
 extern char* decoder_output_names[51];
@@ -81,19 +76,12 @@ typedef struct {
 
 
 /**
- * @brief Loads the configuration from a JSON file
- *
- * @param filename Path of the configuration file to use
- */
-//int load_config(const char* configPath);
-
-/**
  * @brief Initialize a new GECO instance
  *
  * @param useGpu Boolean to determine if the GPU should be used
  * @param gpuId ID of the gpu to use
  */
-void* NewGeco(int logLevel, int useGpu, int gpuId);
+void* NewGeco(int log_level, bool use_gpu, int gpu_id);
 
 /**
  * @brief Frees all of the allocated memory used in this GECO object

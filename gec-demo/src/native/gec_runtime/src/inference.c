@@ -13,58 +13,16 @@ char* decPast_input_names[51] = {"input_ids", "encoder_attention_mask", "encoder
 char* decPast_output_names[25] = {"logits", "present.0.decoder.key", "present.0.decoder.value", "present.1.decoder.key", "present.1.decoder.value", "present.2.decoder.key", "present.2.decoder.value", "present.3.decoder.key", "present.3.decoder.value", "present.4.decoder.key", "present.4.decoder.value", "present.5.decoder.key", "present.5.decoder.value", "present.6.decoder.key", "present.6.decoder.value", "present.7.decoder.key", "present.7.decoder.value", "present.8.decoder.key", "present.8.decoder.value", "present.9.decoder.key", "present.9.decoder.value", "present.10.decoder.key", "present.10.decoder.value", "present.11.decoder.key", "present.11.decoder.value"};
 char* decPast_pkv_inputs[25] = {"", "past_key_values.0.decoder.key", "past_key_values.0.decoder.value", "past_key_values.1.decoder.key", "past_key_values.1.decoder.value", "past_key_values.2.decoder.key", "past_key_values.2.decoder.value", "past_key_values.3.decoder.key", "past_key_values.3.decoder.value", "past_key_values.4.decoder.key", "past_key_values.4.decoder.value", "past_key_values.5.decoder.key", "past_key_values.5.decoder.value", "past_key_values.6.decoder.key", "past_key_values.6.decoder.value", "past_key_values.7.decoder.key", "past_key_values.7.decoder.value", "past_key_values.8.decoder.key", "past_key_values.8.decoder.value", "past_key_values.9.decoder.key", "past_key_values.9.decoder.value", "past_key_values.10.decoder.key", "past_key_values.10.decoder.value", "past_key_values.11.decoder.key", "past_key_values.11.decoder.value"};
 
-bool USE_GPU = false;
 bool USING_F16_MODEL = true;   // true if using model with _Float16 values
 
-/* int load_config(const char* configPath) {
-    clock_t startTime = clock();
-    Log(INFO, "Config Path: \x1b[1;92m%s\x1b[0m", configPath);
-
-    // Read and parse the JSON file
-    struct json_object *parsed_json;
-    parsed_json = json_object_from_file(configPath);
-    if (!parsed_json) {
-        Log(ERROR, "Error parsing JSON file");
-        return -1;
-    }
-
-    // Assign JSON values to variables
-    struct json_object *path_onnx, *log_level;
-    char onnxPath[100];
-
-    if (json_object_object_get_ex(parsed_json, "logLevel", &log_level))
-        LOG_LEVEL = json_object_get_int(log_level);
-
-    if (json_object_object_get_ex(parsed_json, "gec_model_path", &path_onnx)) 
-        strcpy(onnxPath, json_object_get_string(path_onnx));
-    
-    snprintf(PATH_ENCODER, sizeof(PATH_ENCODER), "%s%s", onnxPath, "/encoder_model.onnx");
-    snprintf(PATH_DECODER, sizeof(PATH_DECODER), "%s%s", onnxPath, "/decoder_model.onnx");
-    snprintf(PATH_DECODER_PAST, sizeof(PATH_DECODER_PAST), "%s%s", onnxPath, "/decoder_with_past_model.onnx");
-    snprintf(PATH_SP_MODEL, sizeof(PATH_SP_MODEL), "%s%s", onnxPath, "/spiece.model");
-
-    // Close the file and free memory
-    json_object_put(parsed_json);
-    SetTimerValue("Load Config", startTime, clock());
-    return 0;
-} */
-
-
-
 // Initialize a new GECO instance
-void* NewGeco(int logLevel, int useGpu, int gpuId) {
+void* NewGeco(int log_level, bool use_gpu, int gpu_id) {
     clock_t startTime = clock();
     Log(DEBUG, "Initializing a new Geco object...");
     char* check = "\x1b[92m✓\x1b[0m";
 
     // Set log level
-    LOG_LEVEL = logLevel;
-
-    // Load config
-    /* if (load_config() != 0) {
-        Log(ERROR, "Failed loading config!");
-        return NULL;
-    } */
+    LOG_LEVEL = log_level;
 
     // Allocate memory for GECO object
     Geco* geco = (Geco*)malloc(sizeof(Geco));
@@ -86,10 +44,9 @@ void* NewGeco(int logLevel, int useGpu, int gpuId) {
     }
 
     // Set device_id
-    if (useGpu) USE_GPU = true;
-    snprintf(geco->device_id, sizeof(geco->device_id), USE_GPU ? "gpu:%d" : "cpu", gpuId);
+    snprintf(geco->device_id, sizeof(geco->device_id), use_gpu ? "gpu:%d" : "cpu", gpu_id);
     Log(DEBUG, "Device: \"%s\"", geco->device_id);
-    Log(DEBUG, "USE_GPU: %d", USE_GPU);
+    Log(DEBUG, "Use GPU? %d", use_gpu);
 
     // Create an ONNX Runtime environment
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &geco->env));
@@ -116,13 +73,13 @@ void* NewGeco(int logLevel, int useGpu, int gpuId) {
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->AddSessionConfigEntry(geco->session_options, "session.use_device_allocator_for_initializers", "1"));
     Log(DEBUG, "%s Added Session Configs", check);
 
-    if (USE_GPU) {
+    if (use_gpu) {
         // Create CUDA Memory info
         OrtCUDAProviderOptionsV2* cuda_options = NULL;
         ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateCUDAProviderOptions(&cuda_options));
 
         char idStr[5];
-        snprintf(idStr, sizeof(idStr), "%d", gpuId);
+        snprintf(idStr, sizeof(idStr), "%d", gpu_id);
         const char* provider_keys[] = {"device_id", "arena_extend_strategy"};
         const char* provider_values[] = {idStr, "kNextPowerOfTwo"};
         
