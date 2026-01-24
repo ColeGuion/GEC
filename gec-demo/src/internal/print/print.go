@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 )
 
@@ -44,68 +46,85 @@ func shouldPrint(level int) bool {
 	return level <= logLevel && logLevel != LevelDisabled
 }
 
+// getCallerInfo returns the file and line number of the caller
+func getCallerInfo() (string, int) {
+	// Get the caller's file and line number (skip 2 frames to get the actual caller)
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return "unknown", 0
+	}
+	
+	// Get just the filename without the full path
+	return filepath.Base(file), line
+}
+
 // Critical prints critical messages
 func Critical(format string, args ...interface{}) {
 	if shouldPrint(LevelCritical) {
+		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printCritical(msg)
+		printCritical(file, line, msg)
 	}
 }
 
 // Error prints error messages
 func Error(format string, args ...interface{}) {
 	if shouldPrint(LevelError) {
+		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printError(msg)
+		printError(file, line, msg)
 	}
 }
 
 // Warning prints warning messages
 func Warning(format string, args ...interface{}) {
 	if shouldPrint(LevelWarning) {
+		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printMessage("WARNING", msg)
+		printMessage("WARNING", file, line, msg)
 	}
 }
 
 // Info prints info messages
 func Info(format string, args ...interface{}) {
 	if shouldPrint(LevelInfo) {
+		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printMessage("INFO", msg)
+		printMessage("INFO", file, line, msg)
 	}
 }
 
 // Debug prints debug messages
 func Debug(format string, args ...interface{}) {
 	if shouldPrint(LevelDebug) {
+		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printMessage("DEBUG", msg)
+		printMessage("DEBUG", file, line, msg)
 	}
 }
 
 // printCritical prints a critical message with red background and white text
-func printCritical(message string) {
+func printCritical(file string, line int, message string) {
 	// ANSI escape codes for red background and white text
 	const criticalColor = "\033[1;37;41m" // White text on red background
 	const resetColor = "\033[0m"
 
-	fmt.Printf("%s[CRITICAL] %s%s\n", criticalColor, message, resetColor)
+	fmt.Printf("%s[CRITICAL] %s:%d: %s%s\n", criticalColor, file, line, message, resetColor)
 }
 
 // printError prints an error message in red color
-func printError(message string) {
+func printError(file string, line int, message string) {
 	// ANSI escape codes for red color
 	const redColor = "\033[1;31m"
 	const resetColor = "\033[0m"
 
-	fmt.Printf("%s[ERROR] %s%s\n", redColor, message, resetColor)
+	fmt.Printf("%s[ERROR] %s:%d: %s%s\n", redColor, file, line, message, resetColor)
 }
 
 // printMessage prints a formatted message with timestamp and level
-func printMessage(level, message string) {
+func printMessage(level, file string, line int, message string) {
 	//fmt.Printf("%s\n", message)
-	fmt.Printf("[%s] %s\n", level, message)
+	fmt.Printf("[%s] %s:%d: %s\n", level, file, line, message)
 }
 
 // Helper functions to set specific log levels
