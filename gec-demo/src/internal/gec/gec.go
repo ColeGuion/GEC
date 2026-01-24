@@ -32,6 +32,7 @@ var (
 	rePrefix  = regexp.MustCompile(`(?i)^translate English to (german|french|romanian)`) // Regex to match "Translate English to (German|French|Romanian)" case-insensitively
 	rePreproc = regexp.MustCompile(`\s*\n+\s*`)
 
+	LogLevel = 4 // DEBUG
 	CountLT        = 0
 	ChanCapacity   = 250
 	DeviceCount    = 1
@@ -43,12 +44,9 @@ var (
 )
 
 func init() {
-	print.SetLevel(0) // DEBUG
+	print.SetLevel(LogLevel) // DEBUG
 	GecoChannels = make([]chan WorkItem, NumGpuChannels)
 	print.Debug("Total GEC Channels: %d", NumGpuChannels)
-
-	//TODO: Set from config or elsewhere
-	cLogLevel := 4
 
 	for i := range NumGpuChannels {
 		gpuId := i % DeviceCount
@@ -56,7 +54,7 @@ func init() {
 
 		// Buffered channel with a capacity of `ChanCapacity`
 		GecoChannels[i] = make(chan WorkItem, ChanCapacity)
-		go ClaimGpu(cLogLevel, gpuId, GecoChannels[i])
+		go ClaimGpu(gpuId, GecoChannels[i])
 	}
 
 	// Initialize the parts-of-speech tagging model
@@ -75,11 +73,11 @@ func init() {
 	}
 }
 
-func ClaimGpu(logLevel int, gpuId int, ch chan WorkItem) {
+func ClaimGpu(gpuId int, ch chan WorkItem) {
 	var geco unsafe.Pointer
 
 	// Allocate a Geco object for the channel
-	geco = C.NewGeco(C.int(logLevel), 0, C.int(gpuId))
+	geco = C.NewGeco(C.int(LogLevel), false, C.int(gpuId))
 	if geco == nil {
 		print.Error("Failed initalizing GECO for gpu:%d", gpuId)
 		return
