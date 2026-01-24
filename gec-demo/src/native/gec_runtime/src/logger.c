@@ -18,15 +18,13 @@ void LogMe(LogLev lg, const char* file, int line, const char* format, ...) {
         
         // Print log level with color and filename/line number
         if (lg <= CRITICAL) {
-            printf("\x1b[91m[CRITICAL] %s:%d: ", filename, line);
+            printf("%s:%d: \x1b[91m[CRITICAL] ", filename, line);
         } else if (lg == ERROR) {
-            printf("\x1b[91m[ERROR] %s:%d: ", filename, line);
+            printf("%s:%d: \x1b[91m[ERROR] ", filename, line);
         } else if (lg == WARNING) {
-            printf("\x1b[31m[WARNING] %s:%d: ", filename, line);
-        } else if (lg == INFO) {
-            printf("[INFO] %s:%d: ", filename, line);
-        } else if (lg == DEBUG) {
-            printf("[DEBUG] %s:%d: ", filename, line);
+            printf("%s:%d: \x1b[31mWARNING:\x1b[0m ", filename, line);
+        } else if (lg == INFO || lg == DEBUG) {
+            printf("%s:%d: ", filename, line);
         }
         
         // Print the actual message
