@@ -14,7 +14,6 @@
 #include "config.h"
 #include "logger.h"
 #include "onnxruntime_c_api.h"
-#include "timer.h"
 
 // Decoder Input/Output Names
 extern char* decoder_output_names[51];
@@ -90,8 +89,7 @@ void* NewGeco(int log_level, bool use_gpu, int gpu_id);
  */
 void FreeGeco(void* objPtr);
 
-// Releases memory from an OrtValue* tensor
-void free_tensor(Geco* geco, OrtValue** tensor);
+// Release the input tensor
 void free_inpTensor(Geco* geco);
 void free_binded_tensors(Geco* geco);
 

@@ -15,9 +15,7 @@ char* decPast_pkv_inputs[25] = {"", "past_key_values.0.decoder.key", "past_key_v
 
 bool USING_F16_MODEL = true;   // true if using model with _Float16 values
 
-// Initialize a new GECO instance
 void* NewGeco(int log_level, bool use_gpu, int gpu_id) {
-    clock_t startTime = clock();
     Log(DEBUG, "Initializing a new Geco object...");
     char* check = "\x1b[92m✓\x1b[0m";
 
@@ -46,7 +44,6 @@ void* NewGeco(int log_level, bool use_gpu, int gpu_id) {
     // Set device_id
     snprintf(geco->device_id, sizeof(geco->device_id), use_gpu ? "gpu:%d" : "cpu", gpu_id);
     Log(DEBUG, "Device: \"%s\"", geco->device_id);
-    Log(DEBUG, "Use GPU? %d", use_gpu);
 
     // Create an ONNX Runtime environment
     ORT_CLEAN_ON_ERROR(init_fail, geco, geco->g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "test", &geco->env));
@@ -117,8 +114,7 @@ void* NewGeco(int log_level, bool use_gpu, int gpu_id) {
 
     // Load the SentencePiece model
     geco->processor = initialize_processor(PATH_SP_MODEL);
-    Log(DEBUG, "Geco has been created!");
-    SetTimerValue("Create Geco", startTime, clock());
+    Log(INFO, "Geco has been created!");
     return (void*)geco;
 
     // If the setup fails, free the allocated memory and return NULL
@@ -128,10 +124,7 @@ void* NewGeco(int log_level, bool use_gpu, int gpu_id) {
     return NULL;
 }
 
-// Frees all of the allocated memory used in this GECO object
 void FreeGeco(void* objPtr) {
-    clock_t startTime = clock();
-
     Log(INFO, "Freeing Geco object...");
     Geco* geco = (Geco*)objPtr;   // Cast the void* to Geco*
     if (geco == NULL) {
@@ -212,19 +205,8 @@ void FreeGeco(void* objPtr) {
     free(geco);
     geco = NULL;
     Log(INFO, "Geco has been freed");
-    SetTimerValue("Destroy Geco", startTime, clock());
 }
 
-
-// Release OrtValue* tensors
-void free_tensor(Geco* geco, OrtValue** tensor) {
-    if (tensor != NULL && *tensor != NULL) {
-        geco->g_ort->ReleaseValue(*tensor);
-        *tensor = NULL;
-    }
-}
-
-// Release the input tensor
 void free_inpTensor(Geco* geco) {
     geco->g_ort->ReleaseValue(geco->input_tensor);
     geco->input_tensor = NULL;
@@ -241,7 +223,6 @@ void free_binded_tensors(Geco* geco) {
     }
 }
 
-// Checks if last 6 tokens in an array are the same or alternating between two distinct values
 bool checkRepeating(int* arr, int lastInd) {
     if (arr == NULL) {
         Log(ERROR, "checkRepeating() Array pointer is NULL");
@@ -257,9 +238,7 @@ bool checkRepeating(int* arr, int lastInd) {
     return false;
 }
 
-// Find the most probable tokens for each sequence
 int getMaxTokens(Geco* geco, int64_t* newTokens, int batchSize, int* completed_sequences, int runNum) {
-    clock_t startTime = clock();
     // Check for NULL pointers
     if (!geco || !geco->binded_tensors[0] || !newTokens || !completed_sequences) {
         Log(ERROR, "NULL pointer detected in input arguments");
@@ -358,18 +337,12 @@ int getMaxTokens(Geco* geco, int64_t* newTokens, int batchSize, int* completed_s
         logitData = NULL;
     }
 
-    SetTimerValue("Get Max Tokens", startTime, clock());
     return 0;
 }
 
-
-// Recursively run the Decoder with past model
 void runPast(Geco* geco, int runNum, int64_t* nextToks, int batchSize, int* completed_sequences) {
     // Run the Model with IO Bindings and get the output tensors
-    struct timespec gpuTime;
-    clock_gettime(CLOCK_MONOTONIC, &gpuTime);
     ORT_CLEAN_ON_ERROR(decPast_cleanup, geco, geco->g_ort->RunWithBinding(geco->decPast_session, geco->run_options, geco->decPast_io_binding));
-    SetGpuTime(gpuTime);
     ORT_CLEAN_ON_ERROR(decPast_cleanup, geco, geco->g_ort->GetBoundOutputValues(geco->decPast_io_binding, geco->allocator, &geco->binded_tensors, &geco->binded_tensors_len));
 
     // Get the most likely next tokens
@@ -427,9 +400,7 @@ void runPast(Geco* geco, int runNum, int64_t* nextToks, int batchSize, int* comp
     geco->g_ort->ClearBoundOutputs(geco->decPast_io_binding);
 }
 
-// Run the both decoder models
 void runDecoders(Geco* geco, int batchSize) {
-    clock_t startTime = clock();
     geco->binded_tensors = NULL;
     geco->binded_tensors_len = 0;
     
@@ -451,10 +422,7 @@ void runDecoders(Geco* geco, int batchSize) {
     }
 
     // Run the Model
-    struct timespec gpuTime;
-    clock_gettime(CLOCK_MONOTONIC, &gpuTime);
     ORT_CLEAN_ON_ERROR(decoder_cleanup, geco, geco->g_ort->RunWithBinding(geco->decoder_session, geco->run_options, geco->dec_io_binding));
-    SetGpuTime(gpuTime);
 
     // Get the return output values as OrtValue* Tensors
     ORT_CLEAN_ON_ERROR(decoder_cleanup, geco, geco->g_ort->GetBoundOutputValues(geco->dec_io_binding, geco->allocator, &geco->binded_tensors, &geco->binded_tensors_len));
@@ -466,7 +434,6 @@ void runDecoders(Geco* geco, int batchSize) {
     for (int i = 0; i < batchSize; i++) {
         geco->generated_tokens[i][1] = newTokens[i];
     }
-    SetTimerValue("Main Decoder", startTime, clock());
 
 
     // DECODER_WITH_PAST_MODEL
@@ -489,9 +456,7 @@ void runDecoders(Geco* geco, int batchSize) {
     }
 
     // Run and recurse
-    clock_t rp_startTime = clock();
     runPast(geco, 2, newTokens, batchSize, completed_sequences);
-    SetTimerValue("Past Decoder", rp_startTime, clock());
 
     // Clean up
     decoder_cleanup:
@@ -499,10 +464,8 @@ void runDecoders(Geco* geco, int batchSize) {
     free_inpTensor(geco);
     geco->g_ort->ClearBoundInputs(geco->dec_io_binding);
     geco->g_ort->ClearBoundOutputs(geco->dec_io_binding);
-    SetTimerValue("All Decoders", startTime, clock());
 }
 
-// Uses the float tensors data (`output_tensor`) to create a new tensor of _Float16 data
 int extract_float16_from_tensor(Geco* geco) {
     float* float_data;
     _Float16* float16_data;
@@ -548,7 +511,6 @@ int extract_float16_from_tensor(Geco* geco) {
     return -1;
 }
 
-// Function to execute inference using the Geco context
 void GecoRun(void* context, char** texts, int num_texts, char** result) {
     if (context == NULL) {
         Log(ERROR, "Invalid Geco context!");
@@ -563,9 +525,7 @@ void GecoRun(void* context, char** texts, int num_texts, char** result) {
     InferModel(geco, texts, num_texts, result);
 }
 
-// Implementation of the InferModel function
 void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
-    clock_t startTime = clock();
     geco->input_tensor = NULL;
     geco->output_tensor = NULL;
     geco->output_tensor_fp16 = NULL;
@@ -576,7 +536,6 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
         Log(ERROR, "Failed to create the TokenizedTexts object");
         goto infer_cleanup;
     }
-    SetTimerValue("GEC Preproc", startTime, clock());
 
     // If their are no tokens to process, return NULL
     if (tokTexts->shape[0]*tokTexts->shape[1] == 0) {
@@ -617,10 +576,7 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
     ORT_CLEAN_ON_ERROR(infer_cleanup, geco, geco->g_ort->BindOutput(geco->enc_io_binding, "last_hidden_state", geco->output_tensor));
 
     // Run the Encoder
-    struct timespec gpuTime;
-    clock_gettime(CLOCK_MONOTONIC, &gpuTime);
     ORT_CLEAN_ON_ERROR(infer_cleanup, geco, geco->g_ort->RunWithBinding(geco->encoder_session, geco->run_options, geco->enc_io_binding));
-    SetGpuTime(gpuTime);
     
     if (USING_F16_MODEL) {
         // Create new tensor with float16 data from 'last_hidden_state' tensor
@@ -647,13 +603,9 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
 
     // Run Decoder and Decoder-With-Past model sessions
     runDecoders(geco, batchSize);
-    Log(DEBUG, "Decoders finished running");
 
-
-    // Decode and print the results
-    clock_t postTime = clock();
+    // Decode results
     *result = decode_texts(geco->processor, geco->generated_tokens, tokTexts);
-    SetTimerValue("GEC Postproc", postTime, clock());
     
     // CLEAN UP
     infer_cleanup:
@@ -670,7 +622,5 @@ void InferModel(Geco* geco, char** texts, int num_texts, char** result) {
     geco->g_ort->ClearBoundOutputs(geco->dec_io_binding);
     geco->g_ort->ClearBoundInputs(geco->decPast_io_binding);
     geco->g_ort->ClearBoundOutputs(geco->decPast_io_binding);
-    SetTimerValue("GEC Total", startTime, clock());
-    //PrintTimes();
 }
 

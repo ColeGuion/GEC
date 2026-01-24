@@ -23,7 +23,7 @@ CFLAGS   := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR) -I$(THIRD_DIR)/sentencepie
 CXXFLAGS := -O3 -fPIC -I$(INCLUDE_DIR) -I$(THIRD_DIR) -I$(THIRD_DIR)/sentencepiece/include -I$(THIRD_DIR)/onnxruntime/include -std=c++17
 
 # Sources (relative to this Makefile)
-C_SRCS   := $(SRC_DIR)/inference.c $(SRC_DIR)/logger.c $(SRC_DIR)/timer.c
+C_SRCS   := $(SRC_DIR)/inference.c $(SRC_DIR)/logger.c
 CPP_SRCS := $(SRC_DIR)/wp_tokenizer.cpp $(SRC_DIR)/sentencepiece_wrapper.cpp
 
 # Objects go into build/ preserving subdirs
