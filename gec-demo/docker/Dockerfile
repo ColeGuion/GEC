@@ -40,8 +40,6 @@ RUN go mod download
 # Copy source code
 COPY src ./src
 COPY webpage ./webpage
-#COPY models ./models
-
 
 # Builds native runtime library (libgec.a)
 RUN make -C src/native/gec_runtime
@@ -107,8 +105,11 @@ COPY --from=builder /app/gec-server /app/gec-server
 RUN ldconfig
 
 # Stable Runtime Paths
-ENV MODEL_ROOT=/app/models
 ENV PORT=8089
+
+# Default log level baked into the image at build time (overrideable at runtime)
+ARG LOG_LEVEL=2
+ENV LOG_LEVEL=${LOG_LEVEL}
 
 EXPOSE 8089
 
