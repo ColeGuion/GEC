@@ -11,7 +11,7 @@ package gec
 #cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/onnxruntime/lib
 #cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/sentencepiece/lib
 #cgo LDFLAGS: -L${SRCDIR}/../../native/gec_runtime/third_party/icu/lib
-#cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata -lonnxruntime_providers_shared -lonnxruntime_providers_cuda
+#cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata
 
 #include "inference.h"
 */
