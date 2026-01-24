@@ -9,10 +9,11 @@ import (
 
 // Log levels
 const (
-	LevelDebug = iota
-	LevelInfo
-	LevelWarning
+	LevelCritical = iota
 	LevelError
+	LevelWarning
+	LevelInfo
+	LevelDebug
 	LevelDisabled
 )
 
@@ -40,34 +41,18 @@ func GetLevel() int {
 func shouldPrint(level int) bool {
 	mu.RLock()
 	defer mu.RUnlock()
-	return level >= logLevel
+	return level <= logLevel && logLevel != LevelDisabled
 }
 
-// Debug prints debug messages (visible at DEBUG level and above)
-func Debug(format string, args ...interface{}) {
-	if shouldPrint(LevelDebug) {
+// Critical prints critical messages
+func Critical(format string, args ...interface{}) {
+	if shouldPrint(LevelCritical) {
 		msg := fmt.Sprintf(format, args...)
-		printMessage("DEBUG", msg)
+		printCritical(msg)
 	}
 }
 
-// Info prints info messages (visible at INFO level and above)
-func Info(format string, args ...interface{}) {
-	if shouldPrint(LevelInfo) {
-		msg := fmt.Sprintf(format, args...)
-		printMessage("INFO", msg)
-	}
-}
-
-// Warning prints warning messages (visible at WARNING level and above)
-func Warning(format string, args ...interface{}) {
-	if shouldPrint(LevelWarning) {
-		msg := fmt.Sprintf(format, args...)
-		printMessage("WARNING", msg)
-	}
-}
-
-// Error prints error messages (always visible unless log level is DISABLED)
+// Error prints error messages
 func Error(format string, args ...interface{}) {
 	if shouldPrint(LevelError) {
 		msg := fmt.Sprintf(format, args...)
@@ -75,10 +60,37 @@ func Error(format string, args ...interface{}) {
 	}
 }
 
-// printMessage prints a formatted message with timestamp and level
-func printMessage(level, message string) {
-	fmt.Printf("%s\n", message)
-	//fmt.Printf("[%s] %s\n", level, message)
+// Warning prints warning messages
+func Warning(format string, args ...interface{}) {
+	if shouldPrint(LevelWarning) {
+		msg := fmt.Sprintf(format, args...)
+		printMessage("WARNING", msg)
+	}
+}
+
+// Info prints info messages
+func Info(format string, args ...interface{}) {
+	if shouldPrint(LevelInfo) {
+		msg := fmt.Sprintf(format, args...)
+		printMessage("INFO", msg)
+	}
+}
+
+// Debug prints debug messages
+func Debug(format string, args ...interface{}) {
+	if shouldPrint(LevelDebug) {
+		msg := fmt.Sprintf(format, args...)
+		printMessage("DEBUG", msg)
+	}
+}
+
+// printCritical prints a critical message with red background and white text
+func printCritical(message string) {
+	// ANSI escape codes for red background and white text
+	const criticalColor = "\033[1;37;41m" // White text on red background
+	const resetColor = "\033[0m"
+
+	fmt.Printf("%s[CRITICAL] %s%s\n", criticalColor, message, resetColor)
 }
 
 // printError prints an error message in red color
@@ -90,12 +102,19 @@ func printError(message string) {
 	fmt.Printf("%s[ERROR] %s%s\n", redColor, message, resetColor)
 }
 
+// printMessage prints a formatted message with timestamp and level
+func printMessage(level, message string) {
+	//fmt.Printf("%s\n", message)
+	fmt.Printf("[%s] %s\n", level, message)
+}
+
 // Helper functions to set specific log levels
-func SetLevelDebug()   { SetLevel(LevelDebug) }
-func SetLevelInfo()    { SetLevel(LevelInfo) }
-func SetLevelWarning() { SetLevel(LevelWarning) }
-func SetLevelError()   { SetLevel(LevelError) }
-func DisableLogging()  { SetLevel(LevelDisabled) }
+func SetLevelCritical() { SetLevel(LevelCritical) }
+func SetLevelError()    { SetLevel(LevelError) }
+func SetLevelWarning()  { SetLevel(LevelWarning) }
+func SetLevelInfo()     { SetLevel(LevelInfo) }
+func SetLevelDebug()    { SetLevel(LevelDebug) }
+func DisableLogging()   { SetLevel(LevelDisabled) }
 
 // SetOutput allows redirecting output (optional feature)
 var output io.Writer = os.Stdout
