@@ -1,16 +1,9 @@
 #ifndef INFERENCE_H
 #define INFERENCE_H
 
-#include <assert.h>
-#include <malloc.h>
-#include <math.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include "config.h"
 #include "logger.h"
 #include "onnxruntime_c_api.h"

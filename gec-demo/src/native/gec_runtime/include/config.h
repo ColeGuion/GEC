@@ -8,5 +8,4 @@
 #define MAX_TOKENS 100      // Maximum sequence length allowed (NOTE: No safety bounds are in place to enforce or set this limit) (Maybe prepare_texts function should be updated to handle this)
 #define MAX_BATCH_SIZE 500  // Maximum batch size allowed (NOTE: No safety bounds are in place to enforce or set this limit)
 
-
 #endif // CONFIG_H
