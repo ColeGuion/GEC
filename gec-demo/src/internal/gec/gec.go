@@ -14,12 +14,15 @@ package gec
 #cgo LDFLAGS: -lonnxruntime -lsentencepiece -lstdc++ -lm -ldl -ljson-c -licuuc -licudata
 
 #include "inference.h"
+#include <stdbool.h>
 */
 import "C"
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -32,11 +35,13 @@ var (
 	rePrefix  = regexp.MustCompile(`(?i)^translate English to (german|french|romanian)`) // Regex to match "Translate English to (German|French|Romanian)" case-insensitively
 	rePreproc = regexp.MustCompile(`\s*\n+\s*`)
 
-	LogLevel = 4 // DEBUG
+	LogLevel int
+	UseGpu   = false
+
 	CountLT        = 0
 	ChanCapacity   = 250
 	DeviceCount    = 1
-	NumGpuChannels = 1
+	NumChannels = 1
 	GecoChannels   []chan WorkItem
 
 	IgnoreCollisions = false
@@ -44,13 +49,15 @@ var (
 )
 
 func init() {
-	print.SetLevel(LogLevel) // DEBUG
-	GecoChannels = make([]chan WorkItem, NumGpuChannels)
-	print.Debug("Total GEC Channels: %d", NumGpuChannels)
+	LogLevel = GetLogLevel()
+	print.SetLevel(LogLevel)
+	print.Info("LOG LEVEL: %d", print.GetLevel())
 
-	for i := range NumGpuChannels {
+	GecoChannels = make([]chan WorkItem, NumChannels)
+	print.Debug("Total GEC Channels: %d", NumChannels)
+
+	for i := range NumChannels {
 		gpuId := i % DeviceCount
-		print.Debug("Creating Geco[%d] for gpu-%v", i, gpuId)
 
 		// Buffered channel with a capacity of `ChanCapacity`
 		GecoChannels[i] = make(chan WorkItem, ChanCapacity)
@@ -77,7 +84,7 @@ func ClaimGpu(gpuId int, ch chan WorkItem) {
 	var geco unsafe.Pointer
 
 	// Allocate a Geco object for the channel
-	geco = C.NewGeco(C.int(LogLevel), false, C.int(gpuId))
+	geco = C.NewGeco(C.int(LogLevel), C.bool(UseGpu), C.int(gpuId))
 	if geco == nil {
 		print.Error("Failed initalizing GECO for gpu:%d", gpuId)
 		return
@@ -93,13 +100,33 @@ func ClaimGpu(gpuId int, ch chan WorkItem) {
 // Get random index for a channel to use in GEC Channels
 func PickGecChannel() int {
 	maxInd := len(GecoChannels)
-	for range NumGpuChannels {
+	for range NumChannels {
 		choice := rand.Intn(maxInd)
 		if len(GecoChannels[choice]) < cap(GecoChannels[choice]) {
 			return choice
 		}
 	}
 	return -1
+}
+
+// Reads LOG_LEVEL from env (0-4). Falls back to defaultLevel if missing/invalid.
+func GetLogLevel() int {
+	defaultLevel := 4 // DEBUG
+	s := os.Getenv("LOG_LEVEL")
+	if s == "" {
+		return defaultLevel
+	}
+
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultLevel
+	}
+
+	// Clamp/validate: 0-4 (CRITICAL-DEBUG)
+	if n < 0 || n > 4 {
+		return defaultLevel
+	}
+	return n
 }
 
 // Run G.E.C. requests and return results

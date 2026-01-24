@@ -81,7 +81,7 @@ func Warning(format string, args ...interface{}) {
 	if shouldPrint(LevelWarning) {
 		file, line := getCallerInfo()
 		msg := fmt.Sprintf(format, args...)
-		printMessage("WARNING", file, line, msg)
+		printWarning(file, line, msg)
 	}
 }
 
@@ -103,28 +103,28 @@ func Debug(format string, args ...interface{}) {
 	}
 }
 
-// printCritical prints a critical message with red background and white text
 func printCritical(file string, line int, message string) {
-	// ANSI escape codes for red background and white text
-	const criticalColor = "\033[1;37;41m" // White text on red background
-	const resetColor = "\033[0m"
-
-	fmt.Printf("%s[CRITICAL] %s:%d: %s%s\n", criticalColor, file, line, message, resetColor)
+	const criticalColor = "\x1b[1;37;41m" // White text on red background
+	const resetColor = "\x1b[0m"
+	fmt.Printf("%s:%d: %s[CRITICAL] %s%s\n", file, line, criticalColor, message, resetColor)
 }
 
-// printError prints an error message in red color
 func printError(file string, line int, message string) {
-	// ANSI escape codes for red color
-	const redColor = "\033[1;31m"
-	const resetColor = "\033[0m"
+	const redColor = "\x1b[91m"
+	const resetColor = "\x1b[0m"
+	fmt.Printf("%s:%d: %s[ERROR] %s%s\n", file, line, redColor, message, resetColor)
+}
 
-	fmt.Printf("%s[ERROR] %s:%d: %s%s\n", redColor, file, line, message, resetColor)
+func printWarning(file string, line int, message string) {
+	const warnColor = "\x1b[91m"
+	const resetColor = "\x1b[0m"
+	fmt.Printf("%s:%d: %sWARNING:%s %s\n", file, line, warnColor, resetColor, message)
 }
 
 // printMessage prints a formatted message with timestamp and level
 func printMessage(level, file string, line int, message string) {
-	//fmt.Printf("%s\n", message)
-	fmt.Printf("[%s] %s:%d: %s\n", level, file, line, message)
+	fmt.Printf("%s:%d: %s\n", file, line, message)
+	//fmt.Printf("[%s] %s:%d: %s\n", level, file, line, message)
 }
 
 // Helper functions to set specific log levels

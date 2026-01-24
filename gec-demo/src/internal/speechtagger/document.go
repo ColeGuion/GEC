@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"gec-demo/src/internal/print"
 	"gopkg.in/neurosnap/sentences.v1"
 	"gopkg.in/neurosnap/sentences.v1/data"
 )
@@ -87,7 +86,6 @@ func SplitBySentences(text string) (allTexts []string) {
 // Decode .gob file
 func decodeGob(filePath string, obj any) error {
 	// Use embedded path
-	print.Info("decodeGob() filePath: \x1b[93m%q\x1b[0m", filePath)
 	data, err := modelData.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed reading embedded gob file %q: %w", filePath, err)
