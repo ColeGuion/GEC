@@ -140,7 +140,6 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 	text = CleanText(text)
 
 	if DoMisspellings {
-		print.Warning("Spell checker is not yet implemented.")
 		// Find the spelling errors
 		misspells, err = DirtySpellChecker(text)
 		if err != nil {
@@ -156,11 +155,11 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 		return nil, fmt.Errorf("error running GEC, %v. Input Text: %q", gram_result.Err, text)
 	}
 
-	// Define and clean the grammatically corrected text
 	corrected_text := gram_result.CorrectText
 	if corrected_text == "" {
 		corrected_text = text
 	}
+
 	// Add proper whitespace to beginning and end of corrected text
 	begSpace, endSpace := getSpaceAround(text)
 	corrected_text = begSpace + strings.TrimSpace(corrected_text) + endSpace
@@ -276,11 +275,8 @@ func goStringsToC(strings []string) ([]*C.char, func()) {
 	return cstrs, cleanup
 }
 
-// Frees memory that was allocated by C.CString / C.malloc.
-// The conversion to unsafe.Pointer is required by the C API and is audited.
-// #nosec G103 -- audited: memory comes from C.CString, freed with C.free
+// Frees memory that allocated by C.CString / C.malloc
 func cFree(p *C.char) {
-	// The #nosec tells static‑analysis tools that you did audit it.
 	if p != nil {
 		C.free(unsafe.Pointer(p))
 	}
