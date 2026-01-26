@@ -14,9 +14,6 @@ services:
             # Matches the Dockerfile defaults (explicit here for clarity)
             PORT: "8089"
             LOG_LEVEL: ${LOG_LEVEL:-4}
-
-            # Optional: if your code supports a model-dir env var, set it too
-            # GEC_MODEL_DIR: "/app/models/GecModel"
         volumes:
             # Mount local models into the container
             - ./models:/models
