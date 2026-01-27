@@ -67,17 +67,10 @@ dockBuild:
 
 # Mount the model to the container and run it
 dockRun:
-	docker run --rm -p 8089:8089 -v "$(pwd)/models:/models" gec-demo:latest
+	docker run --rm -p 8089:8089 -v "$(shell pwd)/models:/models" gec-demo:latest
 
 dockInteractive: 
-	docker run --rm -v "$(pwd)/models:/models" -it --entrypoint bash gec-demo:latest
-
-#dock:
-#	docker build -f docker/Dockerfile -t gec-demo:latest . && docker run --rm -p 8089:8089 --name gec-demo gec-demo:latest
-
-#dock:
-#	docker build -f docker/Dockerfile -t gec-demo:latest .
-#	docker run --rm -p 8089:8089 -e HF_REPO_ID="$(HF_REPO)" -e HF_TOKEN="$(HF_TOKEN)" -v "$(pwd)/models:/models" --name gec-demo gec-demo:latest
+	docker run --rm -v "$(shell pwd)/models:/models" -it --entrypoint bash gec-demo:latest
 
 # ---------- Run ----------
 run: server
