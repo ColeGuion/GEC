@@ -14,18 +14,17 @@ import (
 // Formats the `Differences` & `Misspells` as JSON text markups return
 // TODO: Fix error handling
 func FormatToJson(text string, Differences []Markup, Misspells []Misspell) (markups []Markup, err_chars int, profanity_words []string, err error) {
-	//var markups []Markup
-	//var profanity_words []string
 	text_length := utf8.RuneCountInString(text)
 	err_chars = 0
 
 	// Iterate over 'Differences' and create JSON for each
 	for _, diff := range Differences {
 		err_chars += diff.Length
+		
 		// Skip markups covering only newline literals and return chars
 		substr, err := GetSubstring(text, diff.Index, diff.Length)
 		if err != nil {
-			fmt.Printf("error in GetSubstring() for markup, %v", err)
+			print.Error("GetSubstring() failed for markup, %v", err)
 			continue
 		}
 		if strings.Trim(substr, "\r\n") == "" {
@@ -48,7 +47,7 @@ func FormatToJson(text string, Differences []Markup, Misspells []Misspell) (mark
 		// Skip misspelling markups marking nothing
 		substr, err := GetSubstring(text, miss.Index, miss.Length)
 		if err != nil {
-			fmt.Printf("error in GetSubstring() for markup, %v", err)
+			print.Error("GetSubstring() failed for markup, %v", err)
 			continue
 		}
 		if strings.TrimSpace(substr) == "" {
@@ -190,7 +189,7 @@ func GetSubstring(str string, startInd int, length int) (string, error) {
 		return "", nil
 	}
 	if startInd < 0 || length <= 0 || startInd+length > len(str) {
-		return "", fmt.Errorf("invalid start index(%v) or length(%v)", startInd, length)
+		return "", fmt.Errorf("invalid start index(%v) or length(%v). Input string length=%v", startInd, length, len(str))
 	}
 	return str[startInd : startInd+length], nil
 }

@@ -170,10 +170,9 @@ func MarkupGrammar(text string) (gec_result *GecResponse, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("error in findDiff.go, %w", err)
 	}
-	print.Debug("Size of Differences: %v", len(differences))
+	print.Debug("FindDiff differences found: %v", len(differences))
 
 	// Format data to JSON
-	print.Debug("Formatting data to JSON!")
 	text_markups, err_chars, profanity_words, err := FormatToJson(text, differences, misspells)
 	if err != nil {
 		return nil, fmt.Errorf("error in FormatToJson(), %w", err)
