@@ -33,6 +33,13 @@ The system uses a fine-tuned transformer model exported to ONNX and optimized fo
 
 ---
 
+## Demo
+
+https://github.com/user-attachments/assets/2e525aa7-ebd8-4c17-afb6-ec6ca318b74c
+
+
+---
+
 ## Repository Structure
 
 ```
