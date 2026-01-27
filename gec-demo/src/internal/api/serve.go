@@ -12,10 +12,9 @@ import (
 	"gec-demo/src/internal/print"
 )
 
-// CORS middleware (simple + permissive for demo use).
+// CORS middleware
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//TODO: If you later deploy this publicly, tighten this to your domain(s).
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -43,7 +42,6 @@ func gecHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Allow "application/json" and "application/json; charset=utf-8"
 	ct := r.Header.Get("Content-Type")
 	if ct == "" || !strings.HasPrefix(strings.ToLower(ct), "application/json") {
 		http.Error(w, "Content-Type must be application/json", http.StatusBadRequest)

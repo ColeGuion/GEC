@@ -2,6 +2,7 @@
 package gec
 
 import (
+	"fmt"
 	"bytes"
 	"regexp"
 	"sort"
@@ -42,7 +43,7 @@ func FindDifference(t1, t2 string, Misspells []Misspell) ([]Markup, error) {
 		var l2 string
 		if i+1 > len(linesTwo) {
 			l2 = linesOne[i] // Make it the same as original text
-			//return nil, fmt.Errorf("FindDiff() Error: Original and Connected text split into lines of uneven in length (%v vs %v)", len(linesOne), len(linesTwo))
+			return nil, fmt.Errorf("FindDiff() Error: Original and Connected text split into lines of uneven in length (%v vs %v)", len(linesOne), len(linesTwo))
 		} else {
 			l2 = linesTwo[i]
 		}
@@ -114,7 +115,6 @@ func DiffFinder(t1, t2 string, Misspells []Misspell, Differences *[]Markup) {
 		for _, matches := range allMatches {
 			switch {
 			case matches[0] == "\x1b[32m \x1b[0m\"":
-				//! May be able to remove as this maybe a vennify specific problem
 				// Ignore added spaces before ending quotes
 				// Do this by replacing the 1st instance of Matches[0] with just the quote `"`
 				buffStr = strings.Replace(buffStr, matches[0], matches[3], 1)
@@ -292,7 +292,7 @@ func addToDiffs(diffs *[]Markup, index, length int, replacement, diffType string
 	diffStart := index
 	diffEnd := index + length
 
-	//* Remove value if intersecting with a misspelling (and we do NOT ignore collisions)
+	// Remove value if intersecting with a misspelling (and we do NOT ignore collisions)
 	if !IgnoreCollisions {
 		for _, miss := range Misspells {
 			// If ranges intersect, Return from this function, do NOT add to diffs
@@ -302,7 +302,7 @@ func addToDiffs(diffs *[]Markup, index, length int, replacement, diffType string
 		}
 	}
 
-	//* Remove value if intersecting with current differences found
+	// Remove value if intersecting with current differences found
 	for _, df := range *diffs {
 		if df.Index < diffEnd && diffStart < (df.Index+df.Length) {
 			return
