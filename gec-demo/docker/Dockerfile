@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     pkg-config \
     libhunspell-dev \
-    libjson-c-dev \
     libtcmalloc-minimal4 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -58,13 +57,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Runtime dependencies
 # - libstdc++6: for C++ runtime
 # - libhunspell-1.7-0: hunspell runtime shared lib (Ubuntu 24.04)
-# - libjson-c5
 # - libtcmalloc-minimal4
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libstdc++6 \
     libhunspell-1.7-0 \
-    libjson-c5 \
     libtcmalloc-minimal4 \
     && rm -rf /var/lib/apt/lists/*
 
