@@ -72,7 +72,7 @@ This project uses Git LFS for model files.
 Clone with:
 
 ```bash
-git clone https://github.com/<your-username>/gec-demo.git
+git clone https://github.com/ColeGuion/gec-demo.git
 cd gec-demo
 git lfs pull
 ```
