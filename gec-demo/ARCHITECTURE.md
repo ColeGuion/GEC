@@ -265,12 +265,3 @@ Minimal changes required for new models.
 - CPU-only by default
 
 These are intentional for portfolio scope.
-
----
-
-## 📚 Related Documents
-
-- `README.md`
-- `MODEL_CARD.md`
-- `API.md`
-- `THIRD_PARTY_NOTICES.md`
