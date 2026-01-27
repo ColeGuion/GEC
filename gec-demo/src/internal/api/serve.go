@@ -102,7 +102,6 @@ func StartServer(port string) {
 	// Start the server
 	print.Info("Server starting on port %s", port)
 	print.Info("Web UI available at http://localhost%s/", port)
-	print.Info("API endpoint at http://localhost%s/api/gec", port)
 	print.Info("Health Check: http://localhost%s/healthCheck", port)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
