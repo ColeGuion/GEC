@@ -1,11 +1,9 @@
 #include "wp_tokenizer.h"
-
 #include "json.hpp"
-
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <unicode/uchar.h> // sudo apt-get install libicu-dev
+#include <unicode/uchar.h>
 #include <vector>
 
 

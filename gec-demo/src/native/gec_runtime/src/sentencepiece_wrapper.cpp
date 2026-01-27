@@ -1,19 +1,11 @@
 #include "sentencepiece_wrapper.h"
-
 #include "logger.h"
 #include "wp_tokenizer.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
-#include <iostream>
-#include <memory>
 #include <sentencepiece_processor.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <string>
 #include <vector>
 using namespace std;
@@ -212,7 +204,7 @@ char* decode_texts(void* processor_ptr,
     // Allocate memory for the C-style string
     char* result = (char*)malloc(final_text.length() + 1); // +1 for the null terminator
     if (result == nullptr) {
-        std::cerr << "Memory allocation failed." << std::endl;
+        Log(ERROR, "Memory allocation failed.");
         return nullptr;
     }
 

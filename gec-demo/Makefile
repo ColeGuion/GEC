@@ -34,8 +34,6 @@ CGO_ENABLED   := 1
 export CGO_ENABLED := 1
 export CGO_CFLAGS  := -I$(NATIVE_DIR)/include
 export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -lstdc++ 
-#export CGO_CFLAGS  := -I$(NATIVE_DIR)/include -I$(NATIVE_DIR)/third_party/ -I$(NATIVE_DIR)/third_party/onnxruntime/include  -I$(NATIVE_DIR)/third_party/sentencepiece/include
-#export CGO_LDFLAGS := -L$(NATIVE_DIR)/build -lgec -L$(NATIVE_DIR)/third_party/onnxruntime/lib -L$(NATIVE_DIR)/third_party/sentencepiece/lib -L$(NATIVE_DIR)/third_party/icu/lib -lonnxruntime -lsentencepiece -lm -ldl -ljson-c -licuuc -licudata -lstdc++
 
 # ---------- Targets ----------
 .PHONY: all native server run clean info

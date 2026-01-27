@@ -2,11 +2,11 @@
 #define WP_TOKENIZER_H
 
 #include "json.hpp"
-
 #include <iostream>
 #include <string>
 #include <unicode/uchar.h> // ICU library
 #include <vector>
+
 using namespace std;
 using json = nlohmann::json;
 

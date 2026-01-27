@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 
+	"gec-demo/src/internal/print"
 	"gec-demo/src/internal/api"
 )
 
@@ -12,6 +13,7 @@ import (
 // Reads PORT from env (defaults to 8089) and starts the HTTP server.
 func main() {
 	port := os.Getenv("PORT")
+	print.Info("Reading $PORT from env variables. PORT=%q", port)
 	if port == "" {
 		port = "8089"
 	}

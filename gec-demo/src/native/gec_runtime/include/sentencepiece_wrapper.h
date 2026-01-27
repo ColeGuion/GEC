@@ -1,7 +1,6 @@
 #ifndef SENTENCEPIECE_WRAPPER_H
 #define SENTENCEPIECE_WRAPPER_H
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
