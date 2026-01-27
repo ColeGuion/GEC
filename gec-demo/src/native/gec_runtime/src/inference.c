@@ -161,22 +161,16 @@ void FreeGeco(void* objPtr) {
             geco->g_ort->ClearBoundInputs(geco->decPast_io_binding);
             geco->g_ort->ClearBoundOutputs(geco->decPast_io_binding);
         }
-        if (geco->gibb_io_binding != NULL) {
-            geco->g_ort->ClearBoundInputs(geco->gibb_io_binding);
-            geco->g_ort->ClearBoundOutputs(geco->gibb_io_binding);
-        }
 
         RELEASE_RESOURCE(enc_io_binding, ReleaseIoBinding);
         RELEASE_RESOURCE(dec_io_binding, ReleaseIoBinding);
         RELEASE_RESOURCE(decPast_io_binding, ReleaseIoBinding);
-        RELEASE_RESOURCE(gibb_io_binding, ReleaseIoBinding);
 
         RELEASE_RESOURCE(allocator, ReleaseAllocator);
 
         RELEASE_RESOURCE(encoder_session, ReleaseSession);
         RELEASE_RESOURCE(decoder_session, ReleaseSession);
         RELEASE_RESOURCE(decPast_session, ReleaseSession);
-        RELEASE_RESOURCE(gibb_session, ReleaseSession);
         
         RELEASE_RESOURCE(run_options, ReleaseRunOptions);
         //RELEASE_RESOURCE(session_options, ReleaseSessionOptions);

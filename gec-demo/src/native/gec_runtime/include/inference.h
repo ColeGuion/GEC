@@ -34,7 +34,6 @@ typedef struct {
     OrtSession* encoder_session;
     OrtSession* decoder_session;
     OrtSession* decPast_session;
-    OrtSession* gibb_session;
 
     // Allocators
     OrtAllocator* allocator;
@@ -43,7 +42,6 @@ typedef struct {
     OrtIoBinding* enc_io_binding;
     OrtIoBinding* dec_io_binding;
     OrtIoBinding* decPast_io_binding;
-    OrtIoBinding* gibb_io_binding;
 
     // Generated Tokens
     int generated_tokens[MAX_BATCH_SIZE][MAX_TOKENS]; // Array of generated tokens for each sequence in the batch
@@ -70,8 +68,9 @@ typedef struct {
 /**
  * @brief Initialize a new GECO instance
  *
- * @param useGpu Boolean to determine if the GPU should be used
- * @param gpuId ID of the gpu to use
+ * @param log_level Level to set our logger function to
+ * @param use_gpu Boolean to determine if the GPU should be used
+ * @param gpu_id ID of the gpu to use
  */
 void* NewGeco(int log_level, bool use_gpu, int gpu_id);
 
