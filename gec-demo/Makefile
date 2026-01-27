@@ -30,7 +30,6 @@ GO            := go
 GOFLAGS       :=
 CGO_ENABLED   := 1
 
-
 # Export CGO vars so Go can find libgec.a
 export CGO_ENABLED := 1
 export CGO_CFLAGS  := -I$(NATIVE_DIR)/include
@@ -60,12 +59,18 @@ $(GO_BIN): $(NATIVE_LIB)
 server: $(GO_BIN)
 
 # ---------- Docker ----------
+dock:
+	docker compose -f docker-compose.yml up --build
+
 dockBuild:
 	docker build -f docker/Dockerfile -t gec-demo:latest .
 
 # Mount the model to the container and run it
 dockRun:
-	docker run --rm -p 8089:8089 -v "$(shell pwd)/models:/models" gec-demo:latest
+	docker run --rm -p 8089:8089 -v "$(pwd)/models:/models" gec-demo:latest
+
+dockInteractive: 
+	docker run --rm -v "$(pwd)/models:/models" -it --entrypoint bash gec-demo:latest
 
 #dock:
 #	docker build -f docker/Dockerfile -t gec-demo:latest . && docker run --rm -p 8089:8089 --name gec-demo gec-demo:latest
