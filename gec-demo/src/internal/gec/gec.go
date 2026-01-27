@@ -267,7 +267,7 @@ func goStringsToC(strings []string) ([]*C.char, func()) {
 
 	// Return a cleanup function
 	cleanup := func() {
-		print.Info("Cleaning C strings")
+		print.Debug("Cleaning C strings")
 		for _, cstr := range cstrs {
 			cFree(cstr)
 		}
