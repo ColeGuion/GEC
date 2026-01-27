@@ -71,16 +71,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-## Add Python & huggingface_hub CLI to download the model if need be
-#? May need to combine with other dependecies right above
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#    python3 python3-pip \
-#    && pip3 install --no-cache-dir --upgrade huggingface_hub \
-#    && rm -rf /var/lib/apt/lists/*
-## Copy entrypoint script
-#COPY docker/entrypoint.sh /app/entrypoint.sh
-#ENTRYPOINT ["/app/entrypoint.sh"]
-
 # Copy webpage assets
 COPY --from=builder /app/webpage /app/webpage
 
@@ -91,15 +81,6 @@ COPY --from=builder /app/src/native/gec_runtime/third_party/icu/lib/ /usr/local/
 
 # Copy server binary
 COPY --from=builder /app/gec-server /app/gec-server
-
-# Copy source config file
-#COPY --from=builder /app/src/native/gec_runtime/config /app/src/native/gec_runtime/config
-#COPY --from=builder /app/src /app/src
-#COPY --from=builder /app/models /app/models
-
-
-# Copy model files
-#COPY --from=builder /app/models/GecModel /models/GecModel
 
 # Register shared libraries
 RUN ldconfig
