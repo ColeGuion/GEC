@@ -8,8 +8,7 @@ This document describes the internal architecture and data flow of the Grammar E
 
 The system is organized as a multi-layer pipeline:
 
-````
-
+```
 Browser UI
 ↓
 Go HTTP Server
@@ -19,7 +18,6 @@ Native Inference Runtime (C/C++)
 ONNX Runtime + SentencePiece
 ↓
 Model Output
-
 ```
 
 Each layer is optimized for separation of concerns and performance.
