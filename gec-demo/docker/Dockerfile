@@ -1,5 +1,4 @@
 # docker/Dockerfile
-
 ############################
 # 1) Builder stage
 ############################
@@ -7,7 +6,7 @@ FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Build deps: Go, gcc/g++, make, and runtime libs needed for linking
+# Build dependencies: Go, gcc/g++, make, and runtime libs needed for linking
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     make \
@@ -85,11 +84,11 @@ COPY --from=builder /app/gec-server /app/gec-server
 # Register shared libraries
 RUN ldconfig
 
-# Stable Runtime Paths
+# Stable runtime paths
 ENV PORT=8089
 
-# Default log level baked into the image at build time (overrideable at runtime)
-ARG LOG_LEVEL=2
+# Default log level (DEBUG) baked into the image at build time (overrideable at runtime)
+ARG LOG_LEVEL=4
 ENV LOG_LEVEL=${LOG_LEVEL}
 
 EXPOSE 8089
