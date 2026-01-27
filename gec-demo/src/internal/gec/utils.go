@@ -12,7 +12,6 @@ import (
 )
 
 // Formats the `Differences` & `Misspells` as JSON text markups return
-// TODO: Fix error handling
 func FormatToJson(text string, Differences []Markup, Misspells []Misspell) (markups []Markup, err_chars int, profanity_words []string, err error) {
 	text_length := utf8.RuneCountInString(text)
 	err_chars = 0
@@ -231,16 +230,6 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
-
-// Checks if two markups will collide
-func intersects(index1, length1, index2, length2 int) bool {
-	end1 := index1 + length1
-	end2 := index2 + length2
-
-	// Check if ranges overlap
-	return index1 < end2 && index2 < end1
-}
-
 
 // Get accurate index of substring in a string, account for runes
 func RuneIndex(s, substr string) int {

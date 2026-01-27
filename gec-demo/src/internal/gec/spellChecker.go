@@ -10,7 +10,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 	"embed"
-
+	
+	"gec-demo/src/internal/print"
 	hunspell "github.com/sthorne/go-hunspell"
 )
 
@@ -229,7 +230,7 @@ func MarkEmojis(misspells []Misspell, text string) []Misspell {
 		emoji := text[match[0]:match[1]]
 		idx := utf8.RuneCountInString(text[:match[0]])
 		ln := utf8.RuneCountInString(emoji)
-		fmt.Printf("Emoji: %q found at index: %d (Len: %d)\n", emoji, idx, ln)
+		print.Debug("Emoji: %q found at index: %d (Len: %d)\n", emoji, idx, ln)
 
 		// Check for collisions
 		if !checkCollision(misspells, idx, ln) {
