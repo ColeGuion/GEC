@@ -153,7 +153,7 @@ Users remain responsible for validating generated content.
 ## Citation
 
 ```
-@article{raheja2023coedit,
+@article{cole_guion_2026,
       title={gec-model}, 
       author={Cole Guion},
       year={2026},
