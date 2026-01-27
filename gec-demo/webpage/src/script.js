@@ -7,7 +7,7 @@ const EXAMPLES = {
     sva: `The list of items are on the table. Each of the dogs bark loudly at night.`,
     apostrophe: `The dog chased it's tail. Its almost two oclock.\nThe article contradicted it's own argument.\nIts best to do some research before deciding on a topic.\n\nMany people make a tradition of going for a long walk on New Years Day to clear their heads for the months ahead.\nThe dogs bark was far worse than its bite.\nLittle girls clothing is on the first floor, and the mens department is on the second.`,
     punc: `After dinner we went for a walk it was cold outside however we stayed out anyway.`,
-    commas: `The list of items, is on the table. We followed the list and bought apples peaches and bananas today.\n\nNear a small stream at the bottom of the canyon park rangers discovered a gold mine.\n\nMary promised that she would be a good girl that she would not bite her brother and that she would not climb onto the television.\n\nThe instructor looked through his briefcase through his desk and around the office for the lost grade book.\n\nSteven Strom whose show you like will host a party next week.`,
+    commas: `The list of items, is on the table. We followed the list and bought apples peaches and bananas today.\n\nNear a small stream at the bottom of the canyon park rangers discovered a gold mine.\n\nMary promised that she would be a good girl that she would not bite her brother and that she would not climb onto the television.\n\nThe instructor looked through his briefcase through his desk and around the office for the lost grade book.\n\nSteven Smith whose show you like will host a party next week.`,
     caps: `yesterday i visited chicago and met dr. smith at o'hare airport.\n\nAn gift from france, the statue of liberty has welcomed immigrants and visitors to New york Harbor since 1886.`,
     pronouns: `The movie turned out to be a blockbuster hit, who came as a surprise to critics.`,
     homophones: `I except your invitation to the wedding.\n\nThey went on a hike to watch for dear in the forest.\n\nThe puppy gave my finger a playful byte.`,
@@ -15,9 +15,6 @@ const EXAMPLES = {
     hyphens: `She jumped from a two story building.\n\nWe offer around the clock coverage.\n\nIf we split the bill evenly, we each owe thirty four dollars.`,
     misspellings: `I met Mathilde yesterday in Salt Lake City. They have the best bowling rink of all time imo.`,
     profane: `That is your anus.`,
-    // Verbs
-    // Comparative & Superlatives
-    // Commas
 };
 
 
