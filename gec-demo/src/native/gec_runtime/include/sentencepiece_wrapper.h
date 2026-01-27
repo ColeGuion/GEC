@@ -6,18 +6,10 @@
 #include <string.h>
 #include "config.h"
 
-// Types
+// Structs
 typedef struct {
     int64_t ids[MAX_BATCH_SIZE * MAX_TOKENS];
     int64_t attention_mask[MAX_BATCH_SIZE * MAX_TOKENS];
-    int64_t shape[2];
-    int length;
-} Tokenized_WP_Output;
-
-typedef struct {
-    int64_t ids[MAX_BATCH_SIZE * MAX_TOKENS]; // Array of token IDs
-    int64_t
-        attention_mask[MAX_BATCH_SIZE * MAX_TOKENS]; // Attention mask marking non-padding tokens
     int64_t shape[2];
     size_t data_len;
     int newline_size;                 // Number of newline strings
@@ -66,18 +58,6 @@ char* decode_texts(void* processor_ptr,
                    TokenizedTexts* tokensObj);
 
 /**
- * @brief Tokenize a batch of texts using the WordPiece tokenizer
- *
- * @param gibb_tok_path Path to the gibberish tokenizer model
- * @param texts Array of texts to be tokenized
- * @param batchSize Number of texts in the array
- *
- * @return A structure containing the tokenized ids and attention mask and their shapes
- */
-Tokenized_WP_Output batch_gibb_texts(const char* gibb_tok_path, char** texts, int batchSize);
-
-
-/**
  * @brief Free memory allocated by SentencePieceProcessor object
  *
  * @param processor_ptr Pointer to the SentencePieceProcessor object
@@ -90,13 +70,6 @@ void free_processor(void* processor_ptr);
  * @param obj TokenizedTexts instance
  */
 void free_tokenized_texts(TokenizedTexts* obj);
-
-/**
- * @brief Free memory allocated by Tokenized_WP_Output object
- *
- * @param output Tokenized_WP_Output instance
- */
-void free_tokenized_wp_output(Tokenized_WP_Output output);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,5 @@
 #include "sentencepiece_wrapper.h"
 #include "logger.h"
-#include "wp_tokenizer.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -213,53 +212,6 @@ char* decode_texts(void* processor_ptr,
     return result;
 }
 
-Tokenized_WP_Output batch_gibb_texts(const char* gibb_tok_path, char** texts, int batchSize) {
-    // Instantiate the tokenizer (Auto freed when it goes out of scope)
-    WordPieceTokenizer wp_tokenizer(gibb_tok_path);
-    // Holds the encoded input IDs for each sequence
-    std::vector<std::vector<size_t>> batch_input_ids(batchSize); 
-    Tokenized_WP_Output output;
-    int maxLen = 0; // Max length of a sequence in the batch
-
-    for (int i = 0; i < batchSize; i++) {
-        // Lowercase the text
-        std::string input_text = texts[i];
-        std::transform(input_text.begin(), input_text.end(), input_text.begin(), ::tolower);
-
-        // Tokenize the input to get input IDs
-        std::vector<size_t> input_ids = wp_tokenizer.tokenize_full(utf8_to_wstring(input_text));
-        size_t num_tokens = input_ids.size();
-        if ((size_t)maxLen < num_tokens) {
-            maxLen = num_tokens;
-        }
-
-        // Append vector to batch_input_ids
-        batch_input_ids[i] = std::move(input_ids); // Move to avoid copy
-    }
-
-    // Set output length
-    output.shape[0] = std::min(batchSize, MAX_BATCH_SIZE);
-    output.shape[1] = std::min(maxLen, MAX_TOKENS);
-    output.length = output.shape[0] * output.shape[1];
-
-    int index = 0;
-    // Add the token IDs to the IDs and attention_mask arrays
-    for (int i = 0; i < (int)output.shape[0]; i++) {
-        for (int j = 0; j < (int)output.shape[1]; j++) {
-            if (j >= (int)batch_input_ids[i].size()) {
-                // Padding
-                output.ids[index] = 0;
-                output.attention_mask[index] = 0;
-            } else {
-                output.ids[index] = batch_input_ids[i][j];
-                output.attention_mask[index] = 1;
-            }
-            index++;
-        }
-    }
-
-    return output;
-}
 
 // Free the SentencePieceProcessor instance
 void free_processor(void* processor_ptr) {
@@ -282,9 +234,4 @@ void free_tokenized_texts(TokenizedTexts* obj) {
         }
         delete obj;
     }
-}
-
-// Free allocated memory for Tokenized_WP_Output
-void free_tokenized_wp_output(Tokenized_WP_Output output) {
-    // Nothing to free
 }
