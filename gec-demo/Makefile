@@ -1,17 +1,4 @@
-# ============================================================
 # gec-demo/Makefile
-#
-# Top-level build for:
-#   - Native C/C++ ONNX runtime (libgec.a)
-#   - Go GEC server
-#
-# Usage:
-#   make            # build everything
-#   make native     # build libgec.a only
-#   make server     # build Go server only
-#   make run        # run server on :8089
-#   make clean      # clean all build artifacts
-# ============================================================
 
 # ---------- Config ----------
 APP_NAME      := gec-server
