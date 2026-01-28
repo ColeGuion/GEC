@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
         spellCountEl.textContent = String(spelling);
         grammarCountEl.textContent = String(grammar);
     }
-
+    
     function setEditorPlainText(text) {
         // Reset contenteditable to plain text with paragraphs
         editorEl.innerHTML = "";
@@ -116,7 +116,6 @@ document.addEventListener("DOMContentLoaded", function () {
             // Stay in editor view but still update word count
             //updateStats({ plainText: text, textMarkup: [] });
             alert(`Check failed: ${err?.message ?? String(err)}`);
-            clearHighlights();           // important: clean up on error
             //showEditor();
         } finally {
             btnCheck.disabled = false;
@@ -126,9 +125,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ---------- Events ----------
     editorEl.addEventListener("input", () => {
-        // Whenever user types → remove all highlights (simplest UX)
-        clearHighlights();
-
         // Update stats to zero
         updateStats({ plainText: getPlainTextFromEditor(), textMarkup: [] });
     });
@@ -152,153 +148,143 @@ document.addEventListener("DOMContentLoaded", function () {
         setEditorPlainText(EXAMPLES[key] || "");
         editorEl.focus();
     });
-
     
-    function applyHighlightsToEditor(markups, originalText) {
-        if (!markups.length) {
-            clearHighlights();
-            return;
+    // ---------- Init ----------
+    setEditorPlainText("we shood buy an car.");
+});
+
+
+
+function applyHighlightsToEditor(markups, originalText) {
+    // Sort and normalize
+    const marks = normalizeMarkups(markups, originalText.length);
+
+    // Rebuild the content with <span> wrappers
+    let html = "";
+    let cursor = 0;
+
+    for (const m of marks) {
+        if (cursor < m.index) {
+            html += escapeHtml(originalText.slice(cursor, m.index));
         }
 
-        // Sort and normalize
-        const marks = normalizeMarkups(markups, originalText.length);
+        const seg = originalText.slice(m.index, m.end);
+        const cls = isSpellingCategory(m.category) ? "spell" : "hl";
+        const tooltip = safeTooltip(m.message || m.category || "Suggestion");
 
-        // Rebuild the content with <span> wrappers
-        let html = "";
-        let cursor = 0;
+        html += `<span class="${cls}" data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(seg || " ")}</span>`;
 
-        for (const m of marks) {
-            if (cursor < m.index) {
-                html += escapeHtml(originalText.slice(cursor, m.index));
-            }
-
-            const seg = originalText.slice(m.index, m.end);
-            const cls = isSpellingCategory(m.category) ? "spell" : "hl";
-            const tooltip = safeTooltip(m.message || m.category || "Suggestion");
-
-            html += `<span class="${cls}" data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(seg || " ")}</span>`;
-
-            cursor = m.end;
-        }
-
-        if (cursor < originalText.length) {
-            html += escapeHtml(originalText.slice(cursor));
-        }
-
-        // Preserve line breaks
-        html = html.replaceAll("\n", "<br>");
-
-        // Put it back into the editor
-        editorEl.innerHTML = html;
+        cursor = m.end;
     }
 
-    function clearHighlights() {
-        // Flatten back to plain text (removes all <span> wrappers)
-        const plain = getPlainTextFromEditor();
-        setEditorPlainText(plain);   // rebuilds <p> tags
+    if (cursor < originalText.length) {
+        html += escapeHtml(originalText.slice(cursor));
     }
 
+    // Preserve line breaks
+    html = html.replaceAll("\n", "<br>");
 
-    // ---------- Helpers ----------
-    function buildMarkedHtmlFromOffsets(originalText, textMarkup) {
-        const t = originalText ?? "";
-        const marks = normalizeMarkups(textMarkup, t.length);
+    // Put it back into the editor
+    editorEl.innerHTML = html;
+}
 
-        let out = "";
-        let cursor = 0;
 
-        for (const m of marks) {
-            if (cursor < m.index) out += escapeHtml(t.slice(cursor, m.index));
 
-            const seg = t.slice(m.index, m.end);
-            const cls = isSpellingCategory(m.category) ? "spell" : "hl";
-            const tooltip = safeTooltip(m.message || m.category || "Suggestion");
-            out += `<span class="${cls}" data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(seg || " ")}</span>`;
+// ---------- Helpers ----------
+function buildMarkedHtmlFromOffsets(originalText, textMarkup) {
+    const t = originalText ?? "";
+    const marks = normalizeMarkups(textMarkup, t.length);
 
-            cursor = m.end;
-        }
+    let out = "";
+    let cursor = 0;
 
-        if (cursor < t.length) out += escapeHtml(t.slice(cursor));
+    for (const m of marks) {
+        if (cursor < m.index) out += escapeHtml(t.slice(cursor, m.index));
 
-        // Preserve newlines visually like the editor text
-        return out.replaceAll("\n", "<br/>");
+        const seg = t.slice(m.index, m.end);
+        const cls = isSpellingCategory(m.category) ? "spell" : "hl";
+        const tooltip = safeTooltip(m.message || m.category || "Suggestion");
+        out += `<span class="${cls}" data-tooltip="${escapeHtml(tooltip)}">${escapeHtml(seg || " ")}</span>`;
+
+        cursor = m.end;
     }
 
-    function normalizeMarkups(textMarkup, textLen) {
-        const arr = Array.isArray(textMarkup) ? textMarkup : [];
-        const norm = arr.map(m => ({
-            index: Number(m.index),
-            length: Number(m.length),
-            message: m.message ?? "",
-            category: m.category ?? ""
-        }))
-            .filter(m => Number.isFinite(m.index) && Number.isFinite(m.length))
-            .filter(m => m.index >= 0 && m.length >= 0)
-            .map(m => ({ ...m, end: m.index + m.length }))
-            .filter(m => m.end <= textLen)
-            .sort((a, b) => a.index - b.index || a.end - b.end);
+    if (cursor < t.length) out += escapeHtml(t.slice(cursor));
 
-        // Drop overlaps
-        const cleaned = [];
-        let lastEnd = -1;
-        for (const m of norm) {
-            if (m.index < lastEnd) continue;
-            cleaned.push(m);
-            lastEnd = m.end;
-        }
-        return cleaned;
+    // Preserve newlines visually like the editor text
+    return out.replaceAll("\n", "<br/>");
+}
+
+function normalizeMarkups(textMarkup, textLen) {
+    const arr = Array.isArray(textMarkup) ? textMarkup : [];
+    const norm = arr.map(m => ({
+        index: Number(m.index),
+        length: Number(m.length),
+        message: m.message ?? "",
+        category: m.category ?? ""
+    }))
+        .filter(m => Number.isFinite(m.index) && Number.isFinite(m.length))
+        .filter(m => m.index >= 0 && m.length >= 0)
+        .map(m => ({ ...m, end: m.index + m.length }))
+        .filter(m => m.end <= textLen)
+        .sort((a, b) => a.index - b.index || a.end - b.end);
+
+    // Drop overlaps
+    const cleaned = [];
+    let lastEnd = -1;
+    for (const m of norm) {
+        if (m.index < lastEnd) continue;
+        cleaned.push(m);
+        lastEnd = m.end;
     }
+    return cleaned;
+}
 
-    function getPlainTextFromEditor() {
-        // contenteditable -> innerText gives a plain view with newlines
-        return document.getElementById("editorEl").innerText || "";
-    }
+function getPlainTextFromEditor() {
+    // contenteditable -> innerText gives a plain view with newlines
+    return document.getElementById("editorEl").innerText || "";
+}
 
-    function isSpellingCategory(cat) {
-        const c = String(cat || "").toLowerCase();
-        return c.includes("spelling"); // "SPELLING_MISTAKE"
-    }
+function isSpellingCategory(cat) {
+    const c = String(cat || "").toLowerCase();
+    return c.includes("spelling"); // "SPELLING_MISTAKE"
+}
 
-    function countWords(text) {
-        const t = (text || "").trim();
-        if (!t) return 0;
-        return t.split(/\s+/).filter(Boolean).length;
-    }
+function countWords(text) {
+    const t = (text || "").trim();
+    if (!t) return 0;
+    return t.split(/\s+/).filter(Boolean).length;
+}
 
-    function escapeHtml(str) {
-        return String(str)
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
+function escapeHtml(str) {
+    return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
 
-    function safeTooltip(msg) {
-        const s = String(msg ?? "").trim();
-        return s.length > 400 ? (s.slice(0, 397) + "...") : s;
-    }
+function safeTooltip(msg) {
+    const s = String(msg ?? "").trim();
+    return s.length > 400 ? (s.slice(0, 397) + "...") : s;
+}
 
 
-    function logDataDetails(data) {
-        console.log(`Response Object:`, data);
+function logDataDetails(data) {
+    console.log(`Response Object:`, data);
 
-        const corrected = data?.corrected_text ?? "";
-        const markups = Array.isArray(data?.text_markups) ? data.text_markups : [];
-        const charCount = data?.character_count ?? -1;
-        const errCharCount = data?.error_character_count ?? -1;
-        const hasProfanity = data?.contains_profanity ?? false;
-        const serviceTime = data?.service_time ?? 0.0;
-        console.log(`Corrected: ${JSON.stringify(corrected)}
+    const corrected = data?.corrected_text ?? "";
+    const markups = Array.isArray(data?.text_markups) ? data.text_markups : [];
+    const charCount = data?.character_count ?? -1;
+    const errCharCount = data?.error_character_count ?? -1;
+    const hasProfanity = data?.contains_profanity ?? false;
+    const serviceTime = data?.service_time ?? 0.0;
+    console.log(`Corrected: ${JSON.stringify(corrected)}
 Markups: ${markups.length}
 Service Time: ${serviceTime}
 Character Count: ${charCount}
 Error Characters: ${errCharCount}
 Has Profanity?: ${hasProfanity}`);
-        console.log("Markups:", markups);
-    }
-
-    // ---------- Init ----------
-    setEditorPlainText("we shood buy an car.");
-});
-
+    console.log("Markups:", markups);
+}
