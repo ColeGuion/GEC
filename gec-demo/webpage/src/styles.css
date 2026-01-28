@@ -7,10 +7,8 @@
     --barBorder: #d7dde7;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
     --radius: 14px;
-
     --hlYellow: #ffe56a;
     --hlYellowSoft: rgba(255, 229, 106, 0.75);
-
     --errRed: #ff4d4d;
     --errRedSoft: rgba(255, 77, 77, 0.15);
 }
@@ -38,7 +36,6 @@ body {
     padding: 18px;
 }
 
-/* Main "paper" area like the screenshot */
 .frame {
     width: min(1100px, 100%);
     height: min(760px, calc(100vh - 36px));
@@ -51,7 +48,6 @@ body {
     position: relative;
     display: grid;
     grid-template-rows: 1fr auto;
-    /* writing area + bottom bar */
 }
 
 /* Scrollable writing area */
@@ -62,7 +58,6 @@ body {
     color: var(--ink);
     line-height: 1.6;
     font-size: 26px;
-    /* screenshot-like */
     font-family: Georgia, "Times New Roman", serif;
 }
 
@@ -75,7 +70,7 @@ body {
     cursor: help;
 }
 
-/* A red spelling box around a word (like "clinton") */
+/* A red spelling box covering a word */
 .spell {
     border: 2px solid var(--errRed);
     /* background: rgba(255, 77, 77, 0.08); */
@@ -157,7 +152,7 @@ body {
     font-size: 14px;
     color: rgba(17, 24, 39, 0.75);
     padding-bottom: 6px;
-    border-bottom: 3px solid transparent; /* becomes red underline in screenshot */
+    border-bottom: 3px solid transparent;
 }
 /* .stat .value.underline-red { border-bottom-color: var(--errRed); }*/
 .underline-red { border-bottom-color: var(--errRed) !important; }
@@ -212,7 +207,6 @@ body {
     transform: translateY(1px);
 }
 
-/* Small helper row at top-right (optional) */
 .topTools {
     position: absolute;
     top: 14px;
