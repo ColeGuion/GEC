@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error(`HTTP ${resp.status} ${resp.statusText}${errText ? " — " + errText : ""}`);
             }
 
-            // Your response format:
+            // response format:
             // {
             //   corrected_text: string,
             //   text_markups: [{ index, length, message, category }]
@@ -110,13 +110,10 @@ document.addEventListener("DOMContentLoaded", function () {
             // Update counts from the returned markups + current text
             updateStats({ plainText: text, textMarkup: markups });
 
-            // (Optional) If you want a "copy corrected" behavior later:
-            // btnCopy.dataset.corrected = corrected;
-
             //showRender();
         } catch (err) {
             console.error(err);
-            // If the call fails, stay in editor view but still update word count
+            // Stay in editor view but still update word count
             //updateStats({ plainText: text, textMarkup: [] });
             alert(`Check failed: ${err?.message ?? String(err)}`);
             clearHighlights();           // important: clean up on error
@@ -166,10 +163,10 @@ function applyHighlightsToEditor(markups, originalText) {
         return;
     }
 
-    // Sort and normalize (you already have normalizeMarkups)
+    // Sort and normalize
     const marks = normalizeMarkups(markups, originalText.length);
 
-    // We'll rebuild the content with <span> wrappers
+    // Rebuild the content with <span> wrappers
     let html = "";
     let cursor = 0;
 
@@ -194,17 +191,14 @@ function applyHighlightsToEditor(markups, originalText) {
     // Preserve line breaks
     html = html.replaceAll("\n", "<br>");
 
-    // Important: put it back into the editor
+    // Put it back into the editor
     editorEl.innerHTML = html;
-
-    // Optional: scroll to top or to first error
-    // editorEl.scrollTop = 0;
 }
 
 function clearHighlights() {
     // Flatten back to plain text (removes all <span> wrappers)
     const plain = getPlainTextFromEditor();
-    setEditorPlainText(plain);   // your existing function that rebuilds <p> tags
+    setEditorPlainText(plain);   // rebuilds <p> tags
 }
 
 
@@ -247,7 +241,7 @@ function normalizeMarkups(textMarkup, textLen) {
         .filter(m => m.end <= textLen)
         .sort((a, b) => a.index - b.index || a.end - b.end);
 
-    // Drop overlaps (simple + safe for rendering)
+    // Drop overlaps
     const cleaned = [];
     let lastEnd = -1;
     for (const m of norm) {
@@ -265,8 +259,7 @@ function getPlainTextFromEditor() {
 
 function isSpellingCategory(cat) {
     const c = String(cat || "").toLowerCase();
-    // Your example shows: "Spelling Mistake"
-    return c.includes("spelling");
+    return c.includes("spelling"); // "SPELLING_MISTAKE"
 }
 
 function countWords(text) {
